@@ -1,0 +1,3 @@
+A model built solely from stacked [[Transformer]] [[encoder]] layers, pretrained mainly on masked language modeling. Unlike [[GPT]], which sees only the left, its [[self-attention]] has no [[causal mask]], so every position sees context on both sides. After pretraining, a small output layer is added and the model is fine-tuned for tasks such as classification and question answering.
+
+Example: Given “the cat is `[MASK]` on the mat”, the model must predict the masked “sleeping” from the context on both sides. During pretraining, 15% of the [[token|tokens]] are chosen at random as prediction targets. BERT-base has 12 layers and $d = 768$, about 110 million parameters.

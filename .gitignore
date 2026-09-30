@@ -1,0 +1,5 @@
+# 由 build.js 生成；部署时在 GitHub Actions 中重建
+data.js
+# 本机的预览配置
+.claude/
+.DS_Store

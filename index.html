@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学习笔记</title>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<style>
+  /* 讲义：白纸黑墨，一种专色；宋体为正文，楷体排例题，黑体作标签，西文与公式同用 Computer Modern。 */
+  :root {
+    --paper: #ffffff;
+    --ink: #1c1c1c;
+    --quiet: #66645f;
+    --indigo: #1d3f73;
+    --red: #a0362c;
+    --rule: #dcdad5;
+    --tint: rgba(29, 63, 115, .07);
+    --tint-strong: rgba(29, 63, 115, .28);
+    --code: #f4f4f2;
+
+    --song: KaTeX_Main, "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", STSong, serif;
+    --kai: KaTeX_Main, "Kaiti SC", STKaiti, KaiTi, "Source Han Serif SC", serif;
+    --hei: "PingFang SC", "Source Han Sans SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    --num: KaTeX_Main, "Songti SC", serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+    --hang: 5rem;     /* 左侧悬挂编号 */
+    --text: 34rem;    /* 正文栏，约 32 字 */
+    --gap: 3rem;
+    --side: 16rem;    /* 页边注 */
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141517;
+      --ink: #e5e2db;
+      --quiet: #9a9893;
+      --indigo: #9fb6e6;
+      --red: #e08a80;
+      --rule: #2e2f33;
+      --tint: rgba(159, 182, 230, .12);
+      --tint-strong: rgba(159, 182, 230, .35);
+      --code: #1d1e21;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { font-size: 17px; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 1rem/1.95 var(--song);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: inherit; text-decoration: none; }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; border-radius: 2px; }
+
+  .page {
+    max-width: calc(var(--hang) + var(--text) + var(--gap) + var(--side) + 4rem);
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+  article { position: relative; width: var(--text); max-width: 100%; margin-left: var(--hang); }
+  .sec { font-family: var(--num); color: var(--indigo); }
+
+  /* 页眉 */
+  .running {
+    position: sticky;   /* 滚动时页眉始终可见 */
+    top: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    /* 背景向左盖住悬挂编号所在的页边；底线仍只从正文栏画起 */
+    width: calc(var(--hang) + var(--text) + var(--gap) + var(--side));
+    max-width: 100%;
+    margin: 0 0 3.5rem;
+    padding: 1.2rem 0 .55rem var(--hang);
+    background:
+      linear-gradient(var(--rule), var(--rule)) no-repeat right bottom / calc(100% - var(--hang)) 1px,
+      var(--paper);
+    font: .76rem/1.4 var(--song);
+    letter-spacing: .14em;
+    color: var(--quiet);
+  }
+  .running a:hover { color: var(--ink); }
+  .running .where { font-family: var(--num); letter-spacing: .04em; }
+  .running .tools { flex: none; display: flex; align-items: baseline; gap: 1.4em; white-space: nowrap; }
+  .running > span:first-child { min-width: 0; margin-right: 1.4em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }   /* 章名过长时以省略号收尾 */
+  .tools a { color: var(--quiet); }
+  .tools a:hover { color: var(--ink); }
+  .count { margin-left: .3em; font-family: var(--num); color: var(--indigo); }
+  .count:empty { display: none; }
+  .running .chap { margin-left: 1.6em; }
+  #find {
+    width: 8rem;
+    padding: .05rem 0;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    background: none;
+    font: .8rem/1.5 var(--song);
+    letter-spacing: .08em;
+    color: var(--ink);
+  }
+  #find::placeholder { color: var(--quiet); }
+  #find:focus { outline: none; border-bottom-color: var(--indigo); }
+  #find::-webkit-search-cancel-button { display: none; }
+
+  /* 检索结果：页眉之下的浮层，词条在前，问题与专题在后 */
+  .finds {
+    position: absolute; right: 0; top: calc(100% + 1px);
+    width: min(26rem, 100%); max-height: min(60vh, 32rem); overflow-y: auto;
+    padding: .4rem 0 .6rem;
+    font: .85rem/1.6 var(--song); letter-spacing: 0;
+    background: var(--paper); border: 1px solid var(--rule); border-top: 0;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .09);
+  }
+  .finds-label { margin: .5rem 1rem .15rem; font: 600 .7rem/1.6 var(--hei); letter-spacing: .15em; color: var(--quiet); }
+  .finds a { display: flex; align-items: baseline; gap: .7em; padding: .22rem 1rem; color: var(--ink); }
+  .finds a .sec { flex: none; min-width: 2.4em; text-align: right; }
+  .finds { overflow-x: hidden; }
+  .finds a .t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .finds a .x { flex: none; max-width: 45%; margin-left: auto; font: italic .78rem var(--num); color: var(--quiet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .finds a.hit, .finds a:hover { background: var(--tint); }
+  .finds .none { margin: .4rem 1rem; }
+
+  /* 词条 */
+  .entry h1 {
+    position: relative;
+    margin: 0 0 1.4rem;
+    font: 700 2.1rem/1.35 var(--song);
+    letter-spacing: .04em;
+  }
+  .entry h1 .sec {
+    position: absolute;
+    right: calc(100% + 1.4rem);
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .entry .en { margin: -1.05rem 0 1.6rem; font: italic 1.02rem/1.5 var(--num); color: var(--quiet); }
+  .def > p, .remark > p, .ex > p { margin: 0 0 .85em; text-align: justify; }
+  .remark { margin-top: 1.3rem; }
+  .ex { margin-top: 1.7rem; font-family: var(--kai); font-size: 1.04rem; }
+  .label {
+    margin-right: .9em;
+    font: 600 .9rem/1 var(--hei);
+    letter-spacing: .1em;
+    color: var(--indigo);
+  }
+  .none { color: var(--quiet); }
+
+  a.w { color: var(--indigo); border-radius: 2px; transition: background-color .15s; }
+  a.w:hover { text-decoration: underline 1px; text-underline-offset: .28em; }
+  a.w.missing { color: var(--red); text-decoration: underline dotted 1px; text-underline-offset: .28em; }
+  a.w.open { background: var(--tint); box-shadow: 0 0 0 .12em var(--tint); }
+  a.w.here { color: inherit; pointer-events: none; }
+
+  strong { font-family: var(--hei); font-weight: 600; }
+  em {
+    font-style: normal;
+    -webkit-text-emphasis: dot;
+    text-emphasis: dot;
+    -webkit-text-emphasis-position: under;
+    text-emphasis-position: under right;
+  }
+  code { font: .85em var(--mono); padding: .05em .3em; border-radius: 3px; background: var(--tint); }
+  .katex { font-size: 1.06em; }
+  .katex-display { margin: .9em 0 1em; overflow-x: auto; overflow-y: hidden; }
+
+  .refs {
+    margin-top: 3.5rem;
+    padding-top: .9rem;
+    border-top: 1px solid var(--rule);
+    font: .82rem/1.9 var(--song);
+    color: var(--quiet);
+  }
+  .refs a { color: var(--ink); }
+  .refs a:hover { color: var(--indigo); }
+  .refs .sec { margin-right: .35em; }
+  /* 页脚的参考列表先只列标签与条数，点开标签才展开，一次一项。 */
+  .facets { display: flex; flex-wrap: wrap; gap: .2rem 1.7em; margin: 0 0 .5rem; }
+  .facet {
+    padding: 0; border: 0; background: none; cursor: pointer;
+    font: 600 .76rem/1.9 var(--hei); letter-spacing: .1em; color: var(--indigo);
+  }
+  .facet .n { margin-left: .45em; font: 400 .8rem var(--num); letter-spacing: 0; color: var(--quiet); }
+  .facet:hover .n { color: var(--indigo); }
+  .facet[aria-expanded="true"] { text-decoration: underline 1px; text-underline-offset: .4em; }
+  .facet-body { margin: .1rem 0 .9rem; animation: note-in .15s ease-out; }
+  .facet-body.inline a { margin-right: 1em; white-space: nowrap; }   /* 各项之间另有一个空格，西文靠它折行 */
+  .facet-body.lines a { display: block; }
+  .facet-body.lines a .sec { margin-right: .5em; }
+  .facet-body a.far { color: var(--quiet); }   /* 间接依赖 */
+  .facet-body a.far:hover { color: var(--indigo); }
+  .facet-body .step { margin-right: .35em; color: var(--quiet); }
+  .question h1 { font-size: 1.6rem; line-height: 1.5; letter-spacing: .02em; }
+
+  /* 专题：分节，节号悬挂；列表、三线表、代码块 */
+  .contents { display: flex; flex-wrap: wrap; column-gap: 1.3em; margin: -.4rem 0 2.4rem; font: .82rem/1.9 var(--song); color: var(--quiet); }
+  .contents a { white-space: nowrap; color: var(--ink); }
+  .contents a:hover { color: var(--indigo); }
+  .contents .sec { margin-right: .3em; }
+  .part { margin-top: 2.6rem; scroll-margin-top: 4.5rem; }   /* 跳到小节时不被固定的页眉遮住 */
+  .part h2 { position: relative; margin: 0 0 1rem; font: 700 1.3rem/1.5 var(--song); letter-spacing: .04em; }
+  .part h2 .sec { position: absolute; right: calc(100% + 1.4rem); font-weight: 400; }
+  .part > p, .intro > p { margin: 0 0 .85em; text-align: justify; }
+  /* 行内代码不能在字间加空，两端对齐会把同一行的汉字撑开；含代码的段落因此齐左。 */
+  :is(.def, .remark, .ex, .part, .intro) > p:has(code) { text-align: start; }
+  .part ul, .part ol { margin: 0 0 .9em; padding-left: 1.5em; }
+  .part li { margin: .15em 0; }
+  .part li::marker { color: var(--indigo); }
+  .part .table { margin: .4em 0 1.2em; overflow-x: auto; }   /* 窄屏时表格可横向滚动 */
+  .part table { width: 100%; border-collapse: collapse; font-size: .9rem; line-height: 1.7; border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); }
+  .part thead th { border-bottom: .75px solid var(--ink); font-family: var(--hei); font-weight: 600; font-size: .84rem; text-align: left; }
+  .part th, .part td { padding: .35rem .9rem .35rem 0; vertical-align: baseline; }
+  .part td code { white-space: nowrap; }   /* 参数名与指标名不在表中断开 */
+  pre { margin: .3em 0 1.2em; padding: .75rem 1rem; overflow-x: auto; background: var(--code); border-radius: 2px; font: .8rem/1.65 var(--mono); }
+  pre code { padding: 0; background: none; font: inherit; }
+  .turn { display: flex; justify-content: space-between; gap: 2rem; }
+  .turn > span { min-width: 0; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .turn .dir { margin-right: .7em; color: var(--quiet); letter-spacing: .1em; }
+
+  /* 页边注：点开正文中的词，它的定义排在右侧页边，与该词同高；注中的词接着向下展开。 */
+  .notes {
+    position: absolute;
+    left: calc(100% + var(--gap));
+    width: var(--side);
+    font: .84rem/1.75 var(--song);
+    animation: note-in .18s ease-out;
+  }
+  .note + .note { margin-top: 1.4rem; }
+  .note-head { display: block; margin-bottom: .25rem; font-weight: 700; font-size: .9rem; color: var(--indigo); }
+  .note-head .sec { margin-right: .5em; font-weight: 400; }
+  .note-head:hover { text-decoration: underline 1px; text-underline-offset: .28em; }
+  .note p { margin: 0 0 .45em; }
+  .note .label { display: none; }
+  .note .katex-display { margin: .4em 0; }
+  .fold {
+    margin-top: .7rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: .76rem/1.6 var(--song);
+    letter-spacing: .12em;
+    color: var(--quiet);
+    cursor: pointer;
+  }
+  .fold:hover { color: var(--ink); }
+  @keyframes note-in { from { opacity: 0; transform: translateY(4px); } }
+
+  /* 扉页与目录 */
+  .cover { margin: 3rem 0 .5rem; font: 700 3rem/1.2 var(--song); letter-spacing: .32em; }
+  .motto { margin: 0 0 4.5rem; font: 1.05rem/1.8 var(--kai); letter-spacing: .12em; color: var(--quiet); }
+  .toc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: .9rem;
+    padding-bottom: .45rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .toc-head h2 { margin: 0; font: 700 1.2rem/1.4 var(--song); letter-spacing: .4em; }
+  .entries {
+    list-style: none;
+    margin: 0 0 0 calc(-1 * var(--hang));   /* 编号一栏伸进左侧页边，与词条页的编号对齐 */
+    padding: 0;
+    display: grid;
+    grid-template-columns: calc(var(--hang) - 1.4rem) max-content minmax(0, 1fr);
+    column-gap: 1.4rem;
+  }
+  .entries li, .entries a {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: baseline;
+  }
+  .entries a { padding: .22rem 0; border-radius: 2px; }
+  .entries a > .sec { text-align: right; font-size: .95rem; }
+  .entries a > .toc-x {
+    font: italic .92rem var(--num);
+    color: var(--quiet);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .entries li.chap { margin-top: 1.7rem; padding-bottom: .15rem; }
+  .entries li.chap:first-child { margin-top: .3rem; }
+  .entries li.chap > .sec { text-align: right; font-size: .9rem; letter-spacing: .05em; }
+  .entries li.chap > .toc-t { grid-column: 2 / -1; font-weight: 700; font-size: 1.05rem; letter-spacing: .08em; }
+  .entries a:hover > .toc-t, .entries a.sel > .toc-t { color: var(--indigo); }
+  .entries a.sel { background: var(--tint); box-shadow: 0 0 0 .3rem var(--tint); }
+  .entries .none { grid-column: 1 / -1; }
+  .toc-head.second { margin-top: 3.2rem; }
+  .asks a > .toc-t { grid-column: 2 / -1; }
+  .asks .via { display: block; margin-top: .05rem; font-size: .8rem; line-height: 1.6; color: var(--quiet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .asks li:not(.chap) + li:not(.chap) a { margin-top: .35rem; }
+  .toc .title-only { margin: 4.5rem 0 2rem; font: 700 1.6rem/1.4 var(--song); letter-spacing: .4em; }
+  .questions a > .toc-t, .topics a > .toc-t { grid-column: 2 / -1; }
+  .toc .foot { margin: 2.2rem 0 0; font: .8rem/1.9 var(--song); color: var(--quiet); }
+  .toc .foot a { margin-left: 1.2em; color: var(--indigo); }
+
+  /* 疑问：选中正文记下，右侧抽屉中列出 */
+  .jot-btn {
+    position: absolute; z-index: 30;
+    padding: .2rem .7rem; border: 0; border-radius: 3px;
+    font: 600 .76rem/1.6 var(--hei); letter-spacing: .08em;
+    color: var(--paper); background: var(--indigo);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .15); cursor: pointer;
+  }
+  .jot-box {
+    position: absolute; z-index: 31; width: min(21rem, calc(100vw - 2rem));
+    padding: .9rem 1rem .8rem;
+    font: .85rem/1.7 var(--song);
+    background: var(--paper); border: 1px solid var(--rule); border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .12);
+  }
+  .jot-box blockquote, .jot blockquote {
+    margin: 0 0 .6rem; padding-left: .75rem; border-left: 2px solid var(--tint-strong);
+    font-family: var(--kai); color: var(--quiet);
+    max-height: 7em; overflow: auto;
+  }
+  .jot-form { margin-bottom: .7rem; }
+  .jot-form textarea { margin-bottom: .1rem; }
+  .jot-box textarea, .jot-form textarea {
+    display: block; width: 100%; min-height: 4.5rem; resize: vertical;
+    padding: .4rem .55rem; font: inherit; color: var(--ink);
+    background: transparent; border: 1px solid var(--rule); border-radius: 3px;
+  }
+  .jot-box textarea:focus, .jot-form textarea:focus { outline: 2px solid var(--indigo); outline-offset: -1px; }
+  .jot-actions { display: flex; justify-content: flex-end; align-items: baseline; gap: 1.1rem; margin-top: .55rem; }
+  .jot-actions .hint { margin-right: auto; font-size: .72rem; color: var(--quiet); }
+  .jot-actions button, .jot .meta button, .jots-panel header button {
+    padding: 0; border: 0; background: none; cursor: pointer;
+    font: .78rem/1.6 var(--hei); letter-spacing: .06em; color: var(--quiet);
+  }
+  .jot-actions button:hover, .jot .meta button:hover, .jots-panel header button:hover { color: var(--ink); }
+  .jot-actions .primary, .jots-panel header .primary { font-weight: 600; color: var(--indigo); }
+  .jots-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 40;
+    width: min(28rem, 100vw); overflow-y: auto;
+    padding: 1.75rem 1.75rem 3rem;
+    background: var(--paper);
+    box-shadow: -1px 0 0 var(--rule), -14px 0 36px rgba(0, 0, 0, .08);
+    animation: slide-in .2s ease-out;
+  }
+  .jots-panel header { display: flex; align-items: baseline; gap: 1.1rem; margin-bottom: 1.3rem; padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+  .jots-panel h2 { margin: 0 auto 0 0; font: 700 1.15rem/1.4 var(--song); letter-spacing: .35em; }
+  .jots-panel h2 .count { letter-spacing: 0; font-size: .9rem; font-weight: 400; }
+  .jot { margin: 0 0 1.5rem; }
+  .jot .ask { margin: 0 0 .4rem; font: 1rem/1.8 var(--song); white-space: pre-wrap; }
+  .jot blockquote { font-size: .88rem; line-height: 1.75; }
+  .jot .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1.1rem; font: .74rem/1.6 var(--song); color: var(--quiet); }
+  .jot .meta a { color: var(--indigo); }
+  .jots-panel .none { font: .88rem/1.9 var(--song); }
+  @keyframes slide-in { from { transform: translateX(1.5rem); opacity: 0; } }
+
+  /* 页面放不下页边时，页边注改为紧随所在段落排出。 */
+  @media (max-width: 1080px) {
+    .running { width: calc(var(--hang) + var(--text)); }
+    .notes {
+      position: static;
+      width: auto;
+      margin: .1rem 0 1.1rem;
+      padding: .1rem 0 .1rem 1.1rem;
+      border-left: 2px solid var(--tint-strong);
+    }
+  }
+  @media (max-width: 720px) {
+    .page { padding: 0 1.25rem 4rem; }
+    article, .running { width: auto; margin-left: 0; }
+    .running { margin-bottom: 2.5rem; padding-left: 0; background-size: 100% 1px, auto; }
+    .running .chap { display: none; }
+    #find { width: 5.5rem; }
+    .entry h1 { font-size: 1.8rem; }
+    .entry h1 .sec { position: static; margin-right: .5em; }
+    .entries { margin-left: 0; grid-template-columns: 2.2rem max-content minmax(0, 1fr); column-gap: .8rem; }
+    .entries li.chap { display: block; }
+    .entries li.chap > .sec { margin-right: .8em; }
+    .cover { margin-top: 3.5rem; font-size: 2.4rem; }
+    .motto { margin-bottom: 3rem; }
+  }
+  /* 英文版：西文不加字距，段落可断词；标签用衬线粗体、后加句点；强调用斜体。 */
+  :root:lang(en) body { line-height: 1.7; }
+  :root:lang(en) :is(.running, .cover, .motto, .toc-head h2, .jots-panel h2, .facet, .facet .n, .label, .entries li.chap > .toc-t, .entries li.chap > .sec, .entry h1, .question h1, .part h2, .fold, .turn .dir, .finds-label, #find, .jot-btn, .jot-actions button, .jot .meta button, .jots-panel header button) { letter-spacing: normal; }
+  :root:lang(en) :is(.def, .remark, .ex, .part, .intro) > p { hyphens: auto; }
+  :root:lang(en) .label { margin-right: .45em; font: 700 1rem/1 var(--num); }
+  :root:lang(en) .label::after { content: '.'; }
+  :root:lang(en) :is(.facet, .finds-label) { font-family: var(--num); }
+  :root:lang(en) .motto { font-style: italic; }
+  :root:lang(en) em { font-style: italic; -webkit-text-emphasis: none; text-emphasis: none; }
+  :root:lang(en) strong { font-family: inherit; font-weight: 700; }
+  .en:lang(zh), .toc-x:lang(zh), .finds .x:lang(zh) { font-style: normal; }   /* 英文版中的中文名不作斜体 */
+
+  @media (prefers-reduced-motion: reduce) {
+    .notes, .jots-panel, .facet-body { animation: none; }
+    a.w { transition: none; }
+  }
+  @media print {
+    :root { --paper: #fff; --ink: #000; --quiet: #555; --indigo: #1d3f73; --tint: transparent; }
+    html { font-size: 11pt; }
+    .running .tools, .finds, .notes, .turn, .jot-btn, .jot-box, .jots-panel, .facets, .facet-body { display: none; }
+    .page { max-width: none; padding: 0; }
+    article { width: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="running">
+    <span><a href="#" data-go="" class="site"></a><span class="chap"></span></span>
+    <span class="tools">
+      <input id="find" type="search" autocomplete="off" spellcheck="false">
+      <a href="#%E7%9B%AE%E5%BD%95" data-go="目录" class="to-toc"></a><a href="#" class="jots-open"><span class="jots-label"></span><span class="count"></span></a><a href="#" class="lang-switch"></a><span class="where"></span>
+    </span>
+    <div class="finds" role="listbox" hidden></div>
+  </header>
+  <main id="main"></main>
+</div>
+<script src="data.js"></script>
+<script type="module">
+  const { chapters: CHAPTERS = [], words: WORDS = {}, questions: QUESTIONS = [], topics: TOPICS = [], back: BACK = {}, en: EN = { words: {}, questions: {}, topics: {} } } = window.WIKI ?? {};
+  const ORDER = CHAPTERS.flatMap(c => c.words);
+  const main = document.getElementById('main');
+  const running = document.querySelector('.running');
+  const where = running.querySelector('.where');
+  const chap = running.querySelector('.chap');
+  const inline = matchMedia('(max-width: 1080px)');
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+  const hm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+  // 语言：中文或英文，记在本机。地址仍用中文词条名，两种语言下同一个地址是同一页。
+  const LANG = 'learning-notes/lang';
+  let lang = localStorage.getItem(LANG) === 'en' ? 'en' : 'zh';
+  const UI = {
+    zh: {
+      html: 'zh-Hans', site: '学习笔记', motto: '大模型的原理与部署，从问题读起。',
+      search: '检索', searchLabel: '检索词条、问题与专题', findsLabel: '检索结果', toc: '目录', jots: '疑问',
+      other: 'EN', otherLang: 'en', otherLabel: 'Read in English',
+      entries: '词条', questions: '问题', topics: '专题', question: '问题', topic: '专题',
+      chapter: i => `第${han(i + 1)}章`, chapterMark: i => `第${han(i + 1)}章`,
+      sep: '　', titleSep: '｜', list: '、',
+      homeFoot: (n, m) => `共 ${n} 个问题，涉及 ${m} 条词条；问题按所需的词条由浅入深排列。`, random: '随机一问',
+      unbuilt: '尚未构建。运行 <code>node build.js</code> 生成 data.js。',
+      noQuestions: '尚无问题。在 questions/ 中新建一个以「？」结尾的 .md 文件。',
+      tocFoot: (c, n) => `共 ${c} 章 ${n} 条。章内每条排在它链接到的词条之后。`,
+      noFinds: '没有匹配的词条、问题或专题。',
+      unwritten: w => `此条尚未写成。新建 <code>words/${esc(w)}.md</code>，写下它的解释。`, unwrittenNote: '此条尚未写成。',
+      pre: '预备', cited: '见于', askNext: '接着问', route: '路线', covers: '涉及',
+      prev: '上一条', next: '下一条', prevQ: '上一问', nextQ: '下一问',
+      source: v => `依据 ${v} 源码`, notes: '页边注', fold: '收起',
+      jot: '记下疑问', jotPlaceholder: '写下疑问', jotLabel: '疑问', editLabel: '修改疑问',
+      submit: `${isMac ? '⌘' : 'Ctrl'}＋回车保存`, save: '保存', cancel: '取消', saved: '已记下',
+      copyAll: '全部复制', close: '关闭', edit: '修改', copy: '复制', remove: '删除', copied: '已复制',
+      noJots: '尚无疑问。在正文中选中一段文字，点「记下疑问」即可记下。',
+      jotText: j => `疑问：${j.ask}\n原文：「${j.quote}」\n出处：${j.title}`,
+      when: d => `${d.getMonth() + 1} 月 ${d.getDate()} 日 ${hm(d)}`,
+    },
+    en: {
+      html: 'en', site: 'Study Notes', motto: 'The principles and deployment of large models, approached through questions.',
+      search: 'Search', searchLabel: 'Search entries, questions and topics', findsLabel: 'Search results', toc: 'Contents', jots: 'Queries',
+      other: '中文', otherLang: 'zh-Hans', otherLabel: '以中文阅读',
+      entries: 'Entries', questions: 'Questions', topics: 'Topics', question: 'Question', topic: 'Topic',
+      chapter: i => `Chapter ${i + 1}`, chapterMark: i => `Ch. ${i + 1}`,
+      sep: ' · ', titleSep: ' · ', list: ', ',
+      homeFoot: (n, m) => `${n} questions drawing on ${m} entries, ordered from the most elementary to the most advanced.`, random: 'A random question',
+      unbuilt: 'Not built yet. Run <code>node build.js</code> to generate data.js.',
+      noQuestions: 'No questions yet. Add a .md file whose name ends in “？” to questions/.',
+      tocFoot: (c, n) => `${c} chapters, ${n} entries. Within a chapter, each entry comes after the entries it links to.`,
+      noFinds: 'No matching entries, questions or topics.',
+      unwritten: w => `This entry has not been written yet. Create <code>words/${esc(w)}.md</code> with its explanation.`, unwrittenNote: 'Not written yet.',
+      pre: 'Prerequisites', cited: 'Cited by', askNext: 'Ask next', route: 'Route', covers: 'Entries',
+      prev: 'Previous', next: 'Next', prevQ: 'Previous', nextQ: 'Next',
+      source: v => `Based on the source code of ${v}`, notes: 'Margin notes', fold: 'Close',
+      jot: 'Jot a query', jotPlaceholder: 'Write your query', jotLabel: 'Query', editLabel: 'Edit query',
+      submit: `${isMac ? '⌘' : 'Ctrl'}+Enter to save`, save: 'Save', cancel: 'Cancel', saved: 'Saved',
+      copyAll: 'Copy all', close: 'Close', edit: 'Edit', copy: 'Copy', remove: 'Delete', copied: 'Copied',
+      noJots: 'No queries yet. Select some text and choose “Jot a query”.',
+      jotText: j => `Query: ${j.ask}\nQuote: “${j.quote}”\nSource: ${j.title}`,
+      when: d => `${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}, ${hm(d)}`,
+    },
+  };
+  const ui = k => UI[lang][k];
+
+  // 当前语言下的内容。英文稿缺失或未收录时，显示中文稿。
+  const english = () => lang === 'en';
+  const word = w => (english() && EN.words[w]) || WORDS[w];
+  const nameOf = w => english() ? EN.words[w]?.title ?? w : w;                  // 词条的显示名
+  const subOf = w => english() ? EN.words[w]?.sub ?? '' : WORDS[w]?.en ?? '';   // 副题：中文页为英文名，英文页为中文名或全称
+  const askOf = i => (english() && EN.questions[QUESTIONS[i].q]) || QUESTIONS[i];
+  const topicOf = i => (english() && EN.topics[TOPICS[i].t]) || TOPICS[i];
+  const chapterTitle = i => (english() && CHAPTERS[i]?.en) || CHAPTERS[i]?.title || '';
+  const langOf = s => /[\u3400-\u9fff]/.test(s) ? 'zh-Hans' : 'en';
+
+  let current = null;                        // 当前词条；null 表示目录或问题
+  let currentQ = -1;                         // 当前问题的序号
+  let currentT = -1;                         // 当前专题的序号
+  let atToc = false;                         // 是否在目录页
+  let notes = { anchor: null, stack: [] };   // 页边注：由哪个链接展开，依次展开了哪些词
+  let box = null;                            // 页边注的容器
+  let hit = -1;                              // 检索结果中用方向键选中的一项
+
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const href = w => '#' + encodeURIComponent(w);
+  const sec = w => WORDS[w] ? `<span class="sec">${WORDS[w].n}</span>` : '';
+  const turnTo = (w, cls = '') => `<a href="${href(w)}" data-go="${esc(w)}"${cls ? ` class="${cls}"` : ''}>${sec(w)}${esc(nameOf(w))}</a>`;
+  const rank = w => ORDER.indexOf(w);
+  const qkey = i => `问/${QUESTIONS[i].q}`;
+  const askTo = i => `<a href="${href(qkey(i))}" data-go="${esc(qkey(i))}"><span class="sec">${i + 1}</span>${esc(askOf(i).q)}</a>`;
+  const tkey = i => `专/${TOPICS[i].t}`;
+  const topicTo = i => `<a href="${href(tkey(i))}" data-go="${esc(tkey(i))}">${esc(topicOf(i).t)}</a>`;
+  const circled = k => k < 20 ? String.fromCharCode(0x2460 + k) : `${k + 1}.`;
+
+  // 章的序数：第一章、第十二章……；英文版为 Chapter 1。
+  const DIGITS = '〇一二三四五六七八九';
+  const han = n => n < 10 ? DIGITS[n] : `${n >= 20 ? DIGITS[Math.floor(n / 10)] : ''}十${n % 10 ? DIGITS[n % 10] : ''}`;
+  const chapterMark = i => CHAPTERS[i]?.title ? ui('chapterMark')(i) : '';
+  const chapterName = i => CHAPTERS[i]?.title ? `${ui('chapter')(i)}${ui('sep')}${chapterTitle(i)}` : '';
+
+  // 地址为词条名，或「问/」加问题，或「专/」加专题标题。旧的层叠地址形如「#群/逆元」，取最后一段。
+  function parse() {
+    try {
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (h === '目录') return { toc: true };
+      if (h.startsWith('问/')) return { q: QUESTIONS.findIndex(x => x.q === h.slice(2)) };
+      if (h.startsWith('专/')) return { t: TOPICS.findIndex(x => x.t === h.slice(2)) };
+      return { w: h.split('/').pop() || null };
+    } catch {
+      return { w: null };
+    }
+  }
+
+  function route() {
+    closeNotes();
+    const { w = null, q = -1, t = -1, toc = false } = parse();
+    current = w;
+    currentQ = q;
+    currentT = t;
+    atToc = toc;
+    closeJot();
+    closeFinds();
+    queueMicrotask(countJots);
+    if (toc) contents(); else if (t !== -1) topic(t); else if (q !== -1) question(q); else if (w) entry(w); else home();
+    window.scrollTo(0, 0);
+  }
+
+  function go(w) {
+    const before = location.hash;
+    location.hash = w ? href(w) : '';
+    if (location.hash === before) route();   // 地址未变时不会触发 hashchange
+  }
+
+  const chapterRow = (label, title) => `<li class="chap"><span class="sec">${label}</span><span class="toc-t">${esc(title)}</span></li>`;
+  // 首页：全部问题，按所需最深的一章分组。
+  function home() {
+    document.title = ui('site');
+    chap.textContent = '';
+    where.textContent = '';
+    const cited = new Set(QUESTIONS.flatMap(x => x.route)).size;
+    const foot = !window.WIKI ? ui('unbuilt')
+      : !QUESTIONS.length ? ui('noQuestions')
+      : `${ui('homeFoot')(QUESTIONS.length, cited)}<a href="#" id="random">${ui('random')}</a>`;
+    main.innerHTML = `
+      <article class="toc home">
+        <h1 class="cover">${ui('site')}</h1>
+        <p class="motto">${ui('motto')}</p>
+        <div class="toc-head"><h2>${ui('questions')}</h2></div>
+        <ol class="entries asks">${listHome()}</ol>
+        <p class="foot">${foot}</p>
+      </article>`;
+  }
+
+  function listHome() {
+    const row = (go, n, title, via) => `
+      <li><a href="${href(go)}" data-go="${esc(go)}">
+        <span class="sec">${n}</span><span class="toc-t">${title}${via ? `<span class="via">${via}</span>` : ''}</span>
+      </a></li>`;
+    const asks = CHAPTERS.map((c, ci) => {
+      const rows = QUESTIONS.map((x, i) => [x, i]).filter(([x]) => x.ch === ci);
+      return rows.length ? chapterRow(chapterMark(ci), chapterTitle(ci)) + rows.map(([x, i]) => row(qkey(i), i + 1, esc(askOf(i).q), x.route.map(w => esc(nameOf(w))).join(ui('list')))).join('') : '';
+    }).join('');
+    const topics = TOPICS.length ? chapterRow('', ui('topics')) + TOPICS.map((x, i) => row(tkey(i), '§', esc(topicOf(i).t), x.version)).join('') : '';
+    return asks + topics;
+  }
+
+  // 目录页：全部词条，按章排列。
+  function contents() {
+    document.title = `${ui('toc')}${ui('titleSep')}${ui('site')}`;
+    chap.textContent = '';
+    where.textContent = '';
+    main.innerHTML = `
+      <article class="toc">
+        <div class="toc-head"><h2>${ui('toc')}</h2></div>
+        <ol class="entries">${listToc()}</ol>
+        <p class="foot">${ui('tocFoot')(CHAPTERS.length, ORDER.length)}</p>
+      </article>`;
+  }
+
+  function listToc() {
+    return CHAPTERS.map((c, i) => (c.title ? chapterRow(chapterMark(i), chapterTitle(i)) : '') + c.words.map(n => `
+      <li><a href="${href(n)}" data-go="${esc(n)}">
+        ${sec(n)}<span class="toc-t">${esc(nameOf(n))}</span><span class="toc-x" lang="${langOf(subOf(n))}">${esc(subOf(n))}</span>
+      </a></li>`).join('')).join('');
+  }
+
+  // 输入法组字时按下的回车用来确认候选词，不应触发保存或跳转。Safari 在确认时已清除 isComposing，
+  // 故另记组字的起止：组字中、或刚结束的一瞬（同一次按键）的回车，都视为确认候选词。
+  function imeGuard(el) {
+    let composing = false, endedAt = 0;
+    el.addEventListener('compositionstart', () => { composing = true; });
+    el.addEventListener('compositionend', () => { composing = false; endedAt = performance.now(); });
+    return e => e.isComposing || composing || e.keyCode === 229 || performance.now() - endedAt < 50;
+  }
+  const isSubmit = e => e.key === 'Enter' && (isMac ? e.metaKey : e.ctrlKey);
+
+  // 检索：页眉中的输入框，任何页面都可用。标题命中的排在正文命中的之前。
+  const find = document.getElementById('find');
+  const finds = running.querySelector('.finds');
+
+  function results(q) {
+    const has = fields => fields.some(t => (t ?? '').toLowerCase().includes(q));
+    const rank = (list, head, body) => [...list.filter(x => has(head(x))), ...list.filter(x => !has(head(x)) && has(body(x)))];
+    // 标题既查当前语言的，也查中文词条名，两种语言都能检索到。
+    const words = rank(ORDER, n => [nameOf(n), subOf(n), n], n => [word(n).text])
+      .map(n => ({ go: n, n: WORDS[n].n, title: nameOf(n), sub: subOf(n) }));
+    const asks = rank(QUESTIONS.map((x, i) => ({ x: askOf(i), i })), ({ x }) => [x.q], ({ x }) => [x.text])
+      .map(({ x, i }) => ({ go: qkey(i), n: i + 1, title: x.q }));
+    const topics = rank(TOPICS.map((x, i) => ({ x: topicOf(i), i })), ({ x }) => [x.t], ({ x }) => [x.text])
+      .map(({ x, i }) => ({ go: tkey(i), n: '§', title: x.t }));
+    return [[ui('entries'), words], [ui('questions'), asks], [ui('topics'), topics]].filter(([, list]) => list.length);
+  }
+
+  function showFinds() {
+    const q = find.value.trim().toLowerCase();
+    if (!q) { closeFinds(); return; }
+    let k = 0;
+    const groups = results(q);
+    finds.innerHTML = groups.map(([label, list]) => `<p class="finds-label">${label}</p>` + list.slice(0, 12).map(r => `
+      <a href="${href(r.go)}" data-go="${esc(r.go)}" data-k="${k++}" role="option">
+        <span class="sec">${r.n}</span><span class="t">${esc(r.title)}</span>${r.sub ? `<span class="x" lang="${langOf(r.sub)}">${esc(r.sub)}</span>` : ''}
+      </a>`).join('')).join('') || `<p class="none">${ui('noFinds')}</p>`;
+    hit = groups.length ? 0 : -1;
+    markHit();
+    finds.hidden = false;
+  }
+
+  function markHit() {
+    for (const a of finds.querySelectorAll('a')) a.classList.toggle('hit', Number(a.dataset.k) === hit);
+    finds.querySelector('a.hit')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function closeFinds() {
+    finds.hidden = true;
+    hit = -1;
+  }
+
+  find.addEventListener('input', showFinds);
+  find.addEventListener('focus', () => { if (find.value.trim()) showFinds(); });
+  const findComposing = imeGuard(find);
+  find.addEventListener('keydown', e => {
+    const n = finds.querySelectorAll('a').length;
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && n) {
+      e.preventDefault();
+      hit = Math.max(0, Math.min(n - 1, hit + (e.key === 'ArrowDown' ? 1 : -1)));
+      markHit();
+    } else if (e.key === 'Enter' && !findComposing(e)) {
+      const a = finds.querySelector('a.hit') ?? finds.querySelector('a');
+      if (a) { find.value = ''; closeFinds(); find.blur(); go(a.dataset.go); }
+    } else if (e.key === 'Escape') {
+      if (find.value) { find.value = ''; closeFinds(); } else find.blur();
+    }
+  });
+  document.addEventListener('mousedown', e => { if (!e.target.closest('.running')) closeFinds(); });
+
+  function entry(w) {
+    const e = WORDS[w];
+    const c = word(w);
+    const sub = e ? subOf(w) : '';
+    const i = ORDER.indexOf(w);
+    document.title = `${nameOf(w)}${ui('titleSep')}${ui('site')}`;
+    where.textContent = e ? e.n : '';
+    chap.textContent = e ? chapterName(e.ch) : '';
+    const seen = [...(BACK[w] ?? [])].sort((a, b) => rank(a) - rank(b));
+    const pre = e?.pre ?? [];
+    const asked = QUESTIONS.map((x, i) => x.route.includes(w) ? i : -1).filter(i => i !== -1);
+    const treated = TOPICS.map((x, i) => x.route.includes(w) ? i : -1).filter(i => i !== -1);
+    const body = e
+      ? `<section class="def">${c.def}</section>${c.note ? `<section class="remark">${c.note}</section>` : ''}${c.ex ? `<section class="ex">${c.ex}</section>` : ''}`
+      : `<section class="def"><p class="none">${ui('unwritten')(w)}</p></section>`;
+    const prev = i > 0 ? ORDER[i - 1] : null;
+    const next = i !== -1 && i < ORDER.length - 1 ? ORDER[i + 1] : null;
+    main.innerHTML = `
+      <article class="entry">
+        <h1>${sec(w)}${esc(nameOf(w))}</h1>
+        ${sub ? `<p class="en" lang="${langOf(sub)}">${esc(sub)}</p>` : ''}
+        ${body}
+        <footer class="refs">
+          ${facets([
+            [ui('questions'), asked.map(askTo), 'lines'],
+            [ui('pre'), pre.map(p => turnTo(p, e.direct.includes(p) ? '' : 'far')), 'inline'],
+            [ui('cited'), seen.map(s => turnTo(s)), 'inline'],
+            [ui('topics'), treated.map(topicTo), 'lines'],
+          ])}
+          <nav class="turn">
+            ${prev ? `<span><span class="dir">${ui('prev')}</span>${turnTo(prev)}</span>` : '<span></span>'}
+            ${next ? `<span><span class="dir">${ui('next')}</span>${turnTo(next)}</span>` : ''}
+          </nav>
+        </footer>
+      </article>`;
+    markHere(main);
+    fitMath(main);
+  }
+
+  // 独立成行的公式宽于栏宽时按比例缩小，至多缩到六成；再宽则可横向滚动。
+  function fitMath(root) {
+    for (const d of root.querySelectorAll('.katex-display')) {
+      d.style.fontSize = '';
+      const k = d.clientWidth / d.scrollWidth;
+      if (k < 1) d.style.fontSize = `${Math.max(k, .6)}em`;
+    }
+  }
+
+  function question(i) {
+    const x = QUESTIONS[i];
+    const c = askOf(i);
+    document.title = `${c.q}${ui('titleSep')}${ui('site')}`;
+    chap.textContent = `${ui('question')}${ui('sep')}${chapterTitle(x.ch)}`;
+    where.textContent = `${i + 1}`;
+    // 接着问：与本题共用词条最多的问题。
+    const next = QUESTIONS
+      .map((y, j) => [j, y.route.filter(w => x.route.includes(w)).length])
+      .filter(([j, n]) => j !== i && n > 0)
+      .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+      .slice(0, 3)
+      .map(([j]) => j);
+    main.innerHTML = `
+      <article class="entry question">
+        <h1><span class="sec">${i + 1}</span>${esc(c.q)}</h1>
+        <section class="def">${c.def}</section>
+        ${c.note ? `<section class="remark">${c.note}</section>` : ''}
+        ${c.ex ? `<section class="ex">${c.ex}</section>` : ''}
+        <footer class="refs">
+          ${facets([
+            [ui('askNext'), next.map(askTo), 'lines'],
+            [ui('route'), x.route.map((w, k) => `<a href="${href(w)}" data-go="${esc(w)}"><span class="step">${circled(k)}</span>${sec(w)}${esc(nameOf(w))}</a>`), 'inline'],
+            [ui('pre'), x.pre.map(p => turnTo(p, 'far')), 'inline'],
+          ])}
+          <nav class="turn">
+            ${i > 0 ? `<span><span class="dir">${ui('prevQ')}</span>${askTo(i - 1)}</span>` : '<span></span>'}
+            ${i < QUESTIONS.length - 1 ? `<span><span class="dir">${ui('nextQ')}</span>${askTo(i + 1)}</span>` : ''}
+          </nav>
+        </footer>
+      </article>`;
+    markHere(main);
+    fitMath(main);
+  }
+
+  function topic(i) {
+    const x = TOPICS[i];
+    const c = topicOf(i);
+    document.title = `${c.t}${ui('titleSep')}${ui('site')}`;
+    chap.textContent = ui('topic');
+    where.textContent = '';
+    main.innerHTML = `
+      <article class="entry topic">
+        <h1>${esc(c.t)}</h1>
+        <p class="en">${x.sourced ? ui('source')(esc(x.version)) : esc(x.version)}</p>
+        <nav class="contents">${c.sections.map((s, k) => `<a href="#" data-part="${k}"><span class="sec">§${k + 1}</span>${s.h}</a>`).join('')}</nav>
+        <div class="intro">${c.intro}</div>
+        ${c.sections.map((s, k) => `<section class="part" id="part-${k}"><h2><span class="sec">§${k + 1}</span>${s.h}</h2>${s.html}</section>`).join('')}
+        <footer class="refs">
+          ${facets([[ui('covers'), x.route.map(w => turnTo(w)), 'inline']])}
+        </footer>
+      </article>`;
+    markHere(main);
+    fitMath(main);
+  }
+
+  // 页脚的参考列表：list 中每项为 [标签, 链接的 HTML 数组, 排法]，排法为 inline（一行排开）或 lines（每项一行）。
+  function facets(list) {
+    const shown = list.filter(([, items]) => items.length);
+    return `<div class="facets">${shown.map(([label, items], k) => `<button type="button" class="facet" aria-expanded="false" data-facet="${k}">${label}<span class="n">${items.length}</span></button>`).join('')}</div>`
+      + shown.map(([, items, kind], k) => `<div class="facet-body ${kind}" data-facet-body="${k}" hidden>${items.join(kind === 'inline' ? ' ' : '')}</div>`).join('');
+  }
+
+  function toggleFacet(b) {
+    const refs = b.closest('.refs');
+    const open = b.getAttribute('aria-expanded') === 'true';
+    for (const x of refs.querySelectorAll('.facet')) x.setAttribute('aria-expanded', 'false');
+    for (const x of refs.querySelectorAll('.facet-body')) x.hidden = true;
+    if (!open) {
+      b.setAttribute('aria-expanded', 'true');
+      refs.querySelector(`[data-facet-body="${b.dataset.facet}"]`).hidden = false;
+    }
+  }
+
+  // 指向本页的链接不再可点。
+  function markHere(root) {
+    for (const a of root.querySelectorAll('a.w')) a.classList.toggle('here', a.dataset.w === current);
+  }
+
+  const noteHtml = w => {
+    const e = word(w);
+    return `<section class="note" data-w="${esc(w)}">
+      <a class="note-head" href="${href(w)}" data-go="${esc(w)}">${sec(w)}${esc(nameOf(w))}</a>
+      ${e ? e.def : `<p class="none">${ui('unwrittenNote')}</p>`}
+    </section>`;
+  };
+
+  // 点开链接 a 所指的词：正文中的链接另起一组页边注，注中的链接在该注之下接着展开。
+  function peek(a) {
+    const w = a.dataset.w;
+    const note = a.closest('.note');
+    if (note) {
+      const at = notes.stack.indexOf(w);
+      if (at !== -1) { box.children[at].scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+      notes.stack = [...notes.stack.slice(0, notes.stack.indexOf(note.dataset.w) + 1), w];
+    } else if (notes.anchor === a) {
+      closeNotes();
+      return;
+    } else {
+      notes = { anchor: a, stack: [w] };
+    }
+    drawNotes();
+  }
+
+  function drawNotes() {
+    const article = main.querySelector('article');
+    box?.remove();
+    article.style.minHeight = '';
+    for (const x of main.querySelectorAll('a.w.open')) x.classList.remove('open');
+    if (!notes.anchor) return;
+
+    box = document.createElement('aside');
+    box.className = 'notes';
+    box.setAttribute('aria-label', ui('notes'));
+    box.innerHTML = notes.stack.map(noteHtml).join('') + `<button class="fold" type="button">${ui('fold')}</button>`;
+    notes.anchor.classList.add('open');
+    [...box.querySelectorAll('.note')].forEach((n, i) => {
+      for (const x of n.querySelectorAll('a.w')) x.classList.toggle('open', x.dataset.w === notes.stack[i + 1]);
+    });
+    markHere(box);
+
+    if (inline.matches) {
+      (notes.anchor.closest('p, ul, table') ?? notes.anchor).after(box);
+      fitMath(box);
+    } else {
+      article.append(box);
+      fitMath(box);
+      const top = notes.anchor.getBoundingClientRect().top - article.getBoundingClientRect().top;
+      box.style.top = `${Math.max(0, top - 1)}px`;
+      article.style.minHeight = `${box.offsetTop + box.offsetHeight}px`;
+    }
+  }
+
+  function closeNotes() {
+    notes = { anchor: null, stack: [] };
+    if (main.querySelector('article')) drawNotes();
+  }
+
+  function random() {
+    const pool = QUESTIONS.map((_, i) => i).filter(i => i !== currentQ);
+    if (pool.length) go(qkey(pool[Math.floor(Math.random() * pool.length)]));
+  }
+
+  // 疑问：选中正文中的文字，写下疑问；引文、疑问与出处一并存在本机的浏览器中。
+  // 同一用户的 GitHub Pages 网站共用一个源，本地存储的键名须专属于本站；旧键名下的记录迁移过来。
+  const JOTS = 'learning-notes/jots';
+  if (!localStorage.getItem(JOTS) && localStorage.getItem('jots')) {
+    localStorage.setItem(JOTS, localStorage.getItem('jots'));
+    localStorage.removeItem('jots');
+  }
+  const loadJots = () => { try { return JSON.parse(localStorage.getItem(JOTS)) ?? []; } catch { return []; } };
+  const saveJots = list => localStorage.setItem(JOTS, JSON.stringify(list));
+  const jotText = j => ui('jotText')(j);
+  const when = t => ui('when')(new Date(t));
+  let jotBtn = null, jotBox = null, pending = null, panel = null;
+
+  function countJots() {
+    const n = loadJots().length;
+    for (const c of document.querySelectorAll('.count')) c.textContent = n || '';
+  }
+
+  // 当前页在疑问中记作的出处。
+  function here() {
+    if (atToc) return { key: '目录', title: ui('toc') };
+    if (currentT !== -1) return { key: tkey(currentT), title: `${ui('topic')}${ui('sep')}${topicOf(currentT).t}` };
+    if (currentQ !== -1) return { key: qkey(currentQ), title: `${ui('question')} ${currentQ + 1}${ui('sep')}${askOf(currentQ).q}` };
+    if (current) return { key: current, title: `${WORDS[current]?.n ?? ''}${ui('sep')}${nameOf(current)}`.trim() };
+    return { key: '', title: ui('site') };
+  }
+
+  // 选中的文字；其中的公式还原为 $…$ 源码，免得 MathML 与显示文字各出现一遍。
+  function quoteOf(range) {
+    const frag = range.cloneContents();
+    for (const k of frag.querySelectorAll('.katex')) {
+      const tex = k.querySelector('annotation')?.textContent;
+      k.replaceWith(tex ? `$${tex.trim()}$` : k.textContent);
+    }
+    for (const m of frag.querySelectorAll('.katex-mathml')) m.remove();   // 只选中了公式的一部分时
+    return frag.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  function offerJot() {
+    if (jotBox) return;
+    const s = getSelection();
+    const text = s && !s.isCollapsed && s.rangeCount ? quoteOf(s.getRangeAt(0)) : '';
+    const node = text ? s.getRangeAt(0).commonAncestorContainer : null;
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    if (!text || !el?.closest('main article') || el.closest('input, textarea')) { jotBtn?.remove(); jotBtn = null; return; }
+    pending = { quote: text.slice(0, 600), ...here() };
+    const r = s.getRangeAt(0).getBoundingClientRect();
+    if (!jotBtn) {
+      jotBtn = document.createElement('button');
+      jotBtn.type = 'button';
+      jotBtn.className = 'jot-btn';
+      jotBtn.addEventListener('mousedown', e => e.preventDefault());   // 不让点击清掉选区
+      document.body.append(jotBtn);
+    }
+    jotBtn.textContent = ui('jot');
+    jotBtn.style.left = `${scrollX + Math.max(8, Math.min(r.left, innerWidth - 110))}px`;
+    jotBtn.style.top = `${scrollY + r.bottom + 8}px`;
+  }
+
+  function openJot() {
+    if (!pending) return;
+    jotBox = document.createElement('div');
+    jotBox.className = 'jot-box';
+    jotBox.innerHTML = `
+      <blockquote>${esc(pending.quote)}</blockquote>
+      <textarea placeholder="${ui('jotPlaceholder')}" aria-label="${ui('jotLabel')}"></textarea>
+      <div class="jot-actions"><span class="hint">${ui('submit')}</span><button type="button" class="jot-cancel">${ui('cancel')}</button><button type="button" class="primary jot-save">${ui('save')}</button></div>`;
+    jotBox.style.left = jotBtn.style.left;
+    jotBox.style.top = jotBtn.style.top;
+    document.body.append(jotBox);
+    const r = jotBox.getBoundingClientRect();
+    if (r.right > innerWidth - 8) jotBox.style.left = `${scrollX + innerWidth - r.width - 8}px`;
+    jotBtn.remove();
+    jotBtn = null;
+    const ta = jotBox.querySelector('textarea');
+    ta.focus({ preventScroll: true });
+    const composing = imeGuard(ta);
+    ta.addEventListener('keydown', e => {
+      if (isSubmit(e) && !composing(e)) { e.preventDefault(); saveJot(); }   // 单按回车只换行，不与输入法冲突
+      else if (e.key === 'Escape') closeJot();
+    });
+  }
+
+  function saveJot() {
+    const ta = jotBox.querySelector('textarea');
+    const ask = ta.value.trim();
+    if (!ask) { ta.focus(); return; }
+    saveJots([...loadJots(), { id: Date.now(), ask, quote: pending.quote, key: pending.key, title: pending.title, time: new Date().toISOString() }]);
+    countJots();
+    getSelection()?.removeAllRanges();
+    jotBox.querySelector('.jot-actions').innerHTML = `<span class="hint">${ui('saved')}</span>`;
+    setTimeout(closeJot, 700);
+  }
+
+  function closeJot() {
+    jotBox?.remove();
+    jotBtn?.remove();
+    jotBox = jotBtn = pending = null;
+  }
+
+  function openPanel() {
+    closeJot();
+    panel?.remove();
+    panel = document.createElement('aside');
+    panel.className = 'jots-panel';
+    panel.setAttribute('aria-label', ui('jots'));
+    document.body.append(panel);
+    drawPanel();
+  }
+
+  function drawPanel() {
+    const list = loadJots();
+    panel.innerHTML = `
+      <header>
+        <h2>${ui('jots')}<span class="count">${list.length || ''}</span></h2>
+        ${list.length ? `<button type="button" class="primary jots-copy-all">${ui('copyAll')}</button>` : ''}
+        <button type="button" class="jots-close">${ui('close')}</button>
+      </header>
+      ${list.length ? [...list].reverse().map(j => `
+        <section class="jot" data-id="${j.id}">
+          <p class="ask">${esc(j.ask)}</p>
+          <blockquote>${esc(j.quote)}</blockquote>
+          <div class="meta"><a href="${href(j.key)}" data-go="${esc(j.key)}">${esc(j.title)}</a><span>${when(j.time)}</span><button type="button" class="jot-edit">${ui('edit')}</button><button type="button" class="jot-copy">${ui('copy')}</button><button type="button" class="jot-delete">${ui('remove')}</button></div>
+        </section>`).join('') : `<p class="none">${ui('noJots')}</p>`}`;
+  }
+
+  function editJot(section) {
+    const j = loadJots().find(x => String(x.id) === section.dataset.id);
+    const ask = section.querySelector('.ask');
+    const form = document.createElement('div');
+    form.className = 'jot-form';
+    form.innerHTML = `
+      <textarea aria-label="${ui('editLabel')}">${esc(j.ask)}</textarea>
+      <div class="jot-actions"><span class="hint">${ui('submit')}</span><button type="button" class="jot-edit-cancel">${ui('cancel')}</button><button type="button" class="primary jot-edit-save">${ui('save')}</button></div>`;
+    ask.replaceWith(form);
+    section.querySelector('.jot-edit').hidden = true;
+    const ta = form.querySelector('textarea');
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    const composing = imeGuard(ta);
+    ta.addEventListener('keydown', e => {
+      if (isSubmit(e) && !composing(e)) { e.preventDefault(); saveEdit(section); }
+      else if (e.key === 'Escape') { e.stopPropagation(); drawPanel(); }
+    });
+  }
+
+  function saveEdit(section) {
+    const ask = section.querySelector('.jot-form textarea').value.trim();
+    if (!ask) return;
+    saveJots(loadJots().map(j => String(j.id) === section.dataset.id ? { ...j, ask, edited: new Date().toISOString() } : j));
+    drawPanel();
+  }
+
+  // 切换语言：界面文字与内容一并换过，停在同一页。
+  function applyLang() {
+    document.documentElement.lang = ui('html');
+    running.querySelector('.site').textContent = ui('site');
+    running.querySelector('.to-toc').textContent = ui('toc');
+    running.querySelector('.jots-label').textContent = ui('jots');
+    const other = running.querySelector('.lang-switch');
+    other.textContent = ui('other');
+    other.lang = ui('otherLang');
+    other.setAttribute('aria-label', ui('otherLabel'));
+    find.placeholder = ui('search');
+    find.setAttribute('aria-label', ui('searchLabel'));
+    finds.setAttribute('aria-label', ui('findsLabel'));
+  }
+
+  function switchLang() {
+    lang = english() ? 'zh' : 'en';
+    localStorage.setItem(LANG, lang);
+    applyLang();
+    route();
+    if (panel) drawPanel();
+  }
+
+  function closePanel() {
+    panel?.remove();
+    panel = null;
+  }
+
+  async function copy(text, button) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const t = Object.assign(document.createElement('textarea'), { value: text });
+      document.body.append(t);
+      t.select();
+      document.execCommand('copy');
+      t.remove();
+    }
+    const label = button.textContent;
+    button.textContent = ui('copied');
+    setTimeout(() => { button.textContent = label; }, 1200);
+  }
+
+  for (const type of ['mouseup', 'keyup', 'touchend']) document.addEventListener(type, e => {
+    if (!e.target.closest?.('.jot-btn, .jot-box, .jots-panel')) setTimeout(offerJot, 0);
+  });
+
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a, button');
+    if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const jot = a.closest('.jot');
+    if (a.classList.contains('jot-btn')) openJot();
+    else if (a.classList.contains('jot-save')) saveJot();
+    else if (a.classList.contains('jot-cancel')) closeJot();
+    else if (a.classList.contains('jots-open')) openPanel();
+    else if (a.classList.contains('lang-switch')) switchLang();
+    else if (a.classList.contains('jots-close')) closePanel();
+    else if (a.classList.contains('jots-copy-all')) copy(loadJots().map(jotText).join('\n\n'), a);
+    else if (a.classList.contains('jot-copy')) copy(jotText(loadJots().find(j => String(j.id) === jot.dataset.id)), a);
+    else if (a.classList.contains('jot-edit')) editJot(jot);
+    else if (a.classList.contains('jot-edit-save')) saveEdit(jot);
+    else if (a.classList.contains('jot-edit-cancel')) drawPanel();
+    else if (a.classList.contains('jot-delete')) { saveJots(loadJots().filter(j => String(j.id) !== jot.dataset.id)); drawPanel(); countJots(); }
+    else if (a.dataset.go !== undefined && a.closest('.jots-panel')) { closePanel(); go(a.dataset.go); }
+    else if (a.classList.contains('facet')) toggleFacet(a);
+    else if (a.classList.contains('fold')) closeNotes();
+    else if (a.dataset.part !== undefined) document.getElementById(`part-${a.dataset.part}`)?.scrollIntoView({ behavior: 'smooth' });
+    else if (a.id === 'random') random();
+    else if (a.dataset.go !== undefined) go(a.dataset.go);
+    else if (a.classList.contains('w')) peek(a);
+    else return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.target.matches('input, textarea')) return;   // 检索框自己处理按键
+    if (e.key === '/') {
+      e.preventDefault();
+      find.focus();
+    } else if (e.key === 'Escape') {
+      if (panel) closePanel(); else if (jotBox || jotBtn) closeJot(); else closeNotes();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const step = e.key === 'ArrowRight' ? 1 : -1;
+      if (currentQ !== -1) {
+        if (QUESTIONS[currentQ + step]) go(qkey(currentQ + step));
+      } else if (current) {
+        const i = ORDER.indexOf(current);
+        const to = i === -1 ? null : ORDER[i + step];
+        if (to) go(to);
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => { fitMath(main); if (notes.anchor) drawNotes(); });
+  window.addEventListener('hashchange', route);
+  applyLang();
+  route();
+  countJots();
+</script>
+</body>
+</html>

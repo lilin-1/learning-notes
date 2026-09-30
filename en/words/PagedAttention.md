@@ -1,0 +1,5 @@
+An implementation of [[self-attention]] that cuts the [[KV cache]] into fixed-size blocks allocated on demand. Each sequence holds a block table that maps its logically contiguous positions to physical blocks that need not be contiguous, and attention reads the keys and values through the block table. GPU memory need not be reserved for each sequence's maximum length; waste occurs only in the last block of each sequence, so one GPU can hold more concurrent sequences.
+
+Note: Separating logical from physical positions brings two benefits: allocation need not be contiguous, so there is no fragmentation, and identical blocks can be shared by several sequences and stored only once. The price is indirect addressing through the block table during attention, which makes the [[kernel]] more complex.
+
+Example: With a block size of 16, a sequence of 100 [[token|tokens]] occupies $\lceil 100 / 16 \rceil = 7$ blocks, or 112 slots, only 12 of them empty; reserving the maximum length of 2048 would leave 1948 empty.

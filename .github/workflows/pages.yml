@@ -1,0 +1,38 @@
+# 推送到 main 后构建并发布到 GitHub Pages。有词条被拒收时 build.js 以非零状态退出，网站不会更新。
+name: 部署
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时刻只部署一次；正在进行的部署不取消，排队中的只保留最新一次。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: 审核并构建
+        run: node build.js
+      - name: 收集要发布的文件
+        run: mkdir _site && cp -r index.html data.js vendor _site/
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v5
