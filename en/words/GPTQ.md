@@ -1,0 +1,5 @@
+A post-training method that quantizes weights layer by layer. For each layer, it seeks the quantized weights $\hat{W}$ that minimize $\|WX - \hat{W}X\|^2$, where $X$ is the input to that layer on a small amount of calibration data. It quantizes one column at a time: after each column, it uses the second-order information $H = 2XX^{\top}$ computed from $X$ to adjust the columns not yet quantized, offsetting that column's quantization error.
+
+Note: Rounding each weight to the nearest grid point on its own lets the errors accumulate independently; GPTQ lets later weights make up for earlier errors, so the error is much smaller at the same bit width. It needs no retraining, only a little calibration data; the original paper quantized the 175-billion-parameter OPT to 3 or 4 bits in about 4 GPU hours.
+
+Example: OPT-175B in 16 bits takes about 350 GB, needing 5 GPUs of 80 GB; quantized to 3 bits it takes about 63 GB and fits on one. In the original paper, end-to-end generation became about 3.25 times faster on A100s.

@@ -1,0 +1,5 @@
+Storing the keys and values of the [[KV cache]] in fewer bits. At 8 bits, [[FP8]] is common and halves the cache. More aggressive methods go down to 2 bits, where keys and values must be handled differently. A few channels of the keys are consistently large, so keys are quantized per channel; values show no such pattern and are quantized per token.
+
+Note: Every decode step reads the entire cache, and with long contexts and large batches it dominates memory and bandwidth. The bit width of the cache therefore directly determines how many concurrent requests fit and how many bytes each step reads. Unlike weights, the cache is written while generating, so quantization must happen at inference time; the most recent tokens are often kept in high precision until a full group can be quantized.
+
+Example: KIVI quantizes keys and values to 2 bits while keeping the latest 128 tokens in full precision. In the original paper, peak memory including the weights fell to $1/2.6$, and the batch size could grow up to 4 times.

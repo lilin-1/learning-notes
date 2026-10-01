@@ -1,0 +1,5 @@
+A [[position interpolation]] method that treats frequencies separately. Dimensions of [[rotary position embedding]] that rotate fast have already turned many times within the training length and are not interpolated. Dimensions that rotate slowly have turned less than once and are fully interpolated by the scale factor, with a smooth transition in between. In addition, it divides the attention scores by a temperature $t$ that depends on the scale factor $s$, with $\sqrt{1/t} = 0.1 \ln s + 1$.
+
+Note: Interpolating all dimensions alike also slows down the fast ones, making adjacent positions hard to tell apart. Interpolating only the slow ones keeps short-range resolution while bringing long-range angles into the seen range. The original paper reports needing 10 times fewer fine-tuning tokens and 2.5 times fewer steps than earlier methods.
+
+Example: With $s = 32$, $\sqrt{1/t} = 0.1 \ln 32 + 1 \approx 1.35$, so the scores are multiplied by about $1.35^2 \approx 1.82$. DeepSeek-V3 used YaRN in two stages to extend its context from 4K to 32K and then to 128K, training 1000 steps each.
