@@ -1,6 +1,6 @@
 # CUDA in depth
 
-This topic follows one kernel from source code to execution, at roughly the depth that computer organization gives the CPU. The general concepts are covered by the entries [[host and device]], [[GPU driver]], [[command buffer]], [[thread block]], [[warp]], [[streaming multiprocessor]], [[PTX]], [[SASS]] and [[stream]]. Hardware figures come from NVIDIA's published A100 specifications. Details of command submission come from NVIDIA's published Ampere hardware manuals (open-gpu-doc), and the rest from the CUDA 13.4 documentation.
+This topic follows one kernel from source code to execution. The general concepts are covered by the entries [[host and device]], [[GPU driver]], [[command buffer]], [[thread block]], [[warp]], [[streaming multiprocessor]], [[PTX]], [[SASS]] and [[stream]]. Hardware figures come from NVIDIA's published A100 specifications. Details of command submission come from NVIDIA's published Ampere hardware manuals (open-gpu-doc), and the rest from the CUDA 13.4 documentation.
 
 ## Overview
 

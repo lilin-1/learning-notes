@@ -183,21 +183,11 @@ function topicBlock(p, inline, spans) {
   return `<p>${inline(joinLines(p))}</p>`;
 }
 
-// 首句，用于目录。遇到句号或独立公式即止。
-function firstSentence(text) {
-  const ps = paragraphs(text);
-  const p = ps[0] ?? '';
-  const k = p.search(/[。\ue800-\uebff]/);
-  if (k === -1) return ps.length > 1 ? `${p}…` : p;
-  return p[k] === '。' ? p.slice(0, k + 1) : `${p.slice(0, k).trim()}…`;
-}
-
-function renderer(spans, has, anchors = true) {
+function renderer(spans, has) {
   const inline = s => emphasis(esc(s)).replace(held(), c => {
     const span = spans[slot(c)];
     if (span.target === undefined) return span.html;
     const label = inline(span.label);
-    if (!anchors) return label;
     const cls = has(span.target) ? 'w' : 'w missing';
     return `<a class="${cls}" href="#${encodeURIComponent(span.target)}" data-w="${esc(span.target)}">${label}</a>`;
   });
@@ -624,7 +614,6 @@ function build() {
       ch: ci,
       en: en.get(name) ?? '',
       ...blocks(e, has, '定义'),
-      excerpt: renderer(e.spans, has, false)(firstSentence(e.text)),
       text: plain(e.text, e.spans).replace(/\s+/g, ' ').trim(),
       pre: prerequisites(name),
       direct: direct(name),

@@ -1,6 +1,6 @@
 # vLLM in depth
 
-This topic is based on the source code of vLLM v0.30.0. All paths are relative to the root of the source tree; the build checks that each one exists and, for those written as `path:symbol`, that the symbol appears in the file. The general principles are covered by the entries [[PagedAttention]], [[continuous batching]], [[prefix caching]], [[chunked prefill]] and [[speculative decoding]]. Two computational optimizations are covered separately by [[FlashAttention]] and [[CUDA graph]]. This topic describes only how [[vLLM]] implements them.
+This topic is based on the source code of vLLM v0.30.0. All paths are relative to the root of the source tree and have been checked against the source. The general principles are covered by the entries [[PagedAttention]], [[continuous batching]], [[prefix caching]], [[chunked prefill]] and [[speculative decoding]]. Two computational optimizations are covered separately by [[FlashAttention]] and [[CUDA graph]]. This topic describes only how [[vLLM]] implements them.
 
 ## Overview
 

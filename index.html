@@ -518,14 +518,14 @@
   const chapterMark = i => CHAPTERS[i]?.title ? ui('chapterMark')(i) : '';
   const chapterName = i => CHAPTERS[i]?.title ? `${ui('chapter')(i)}${ui('sep')}${chapterTitle(i)}` : '';
 
-  // 地址为词条名，或「问/」加问题，或「专/」加专题标题。旧的层叠地址形如「#群/逆元」，取最后一段。
+  // 地址为词条名，或「问/」加问题，或「专/」加专题标题。
   function parse() {
     try {
       const h = decodeURIComponent(location.hash.slice(1));
       if (h === '目录') return { toc: true };
       if (h.startsWith('问/')) return { q: QUESTIONS.findIndex(x => x.q === h.slice(2)) };
       if (h.startsWith('专/')) return { t: TOPICS.findIndex(x => x.t === h.slice(2)) };
-      return { w: h.split('/').pop() || null };
+      return { w: h || null };
     } catch {
       return { w: null };
     }
@@ -865,12 +865,8 @@
   }
 
   // 疑问：选中正文中的文字，写下疑问；引文、疑问与出处一并存在本机的浏览器中。
-  // 同一用户的 GitHub Pages 网站共用一个源，本地存储的键名须专属于本站；旧键名下的记录迁移过来。
+  // 同一用户的 GitHub Pages 网站共用一个源，本地存储的键名须专属于本站。
   const JOTS = 'learning-notes/jots';
-  if (!localStorage.getItem(JOTS) && localStorage.getItem('jots')) {
-    localStorage.setItem(JOTS, localStorage.getItem('jots'));
-    localStorage.removeItem('jots');
-  }
   const loadJots = () => { try { return JSON.parse(localStorage.getItem(JOTS)) ?? []; } catch { return []; } };
   const saveJots = list => localStorage.setItem(JOTS, JSON.stringify(list));
   const jotText = j => ui('jotText')(j);
@@ -942,7 +938,7 @@
     ta.focus({ preventScroll: true });
     const composing = imeGuard(ta);
     ta.addEventListener('keydown', e => {
-      if (isSubmit(e) && !composing(e)) { e.preventDefault(); saveJot(); }   // 单按回车只换行，不与输入法冲突
+      if (isSubmit(e) && !composing(e)) { e.preventDefault(); saveJot(); }   // 单按回车只换行
       else if (e.key === 'Escape') closeJot();
     });
   }
