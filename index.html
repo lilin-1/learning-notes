@@ -259,6 +259,7 @@
   /* 扉页与目录 */
   .cover { margin: 3rem 0 .5rem; font: 700 3rem/1.2 var(--song); letter-spacing: .32em; }
   .motto { margin: 0 0 4.5rem; font: 1.05rem/1.8 var(--kai); letter-spacing: .12em; color: var(--quiet); }
+  .motto span { display: block; text-wrap: balance; }
   .toc-head {
     display: flex;
     justify-content: space-between;
@@ -441,7 +442,7 @@
   let lang = localStorage.getItem(LANG) === 'en' ? 'en' : 'zh';
   const UI = {
     zh: {
-      html: 'zh-Hans', site: '学习笔记', motto: '大模型的原理与部署，从问题读起。',
+      html: 'zh-Hans', site: '学习笔记', motto: ['每个问题的解答都链接到所需的概念，由浅入深。', '与 Claude 一同写成。'],
       search: '检索', searchLabel: '检索词条、问题与专题', findsLabel: '检索结果', toc: '目录', jots: '疑问',
       other: 'EN', otherLang: 'en', otherLabel: 'Read in English',
       entries: '词条', questions: '问题', topics: '专题', question: '问题', topic: '专题',
@@ -464,7 +465,7 @@
       when: d => `${d.getMonth() + 1} 月 ${d.getDate()} 日 ${hm(d)}`,
     },
     en: {
-      html: 'en', site: 'Study Notes', motto: 'The principles and deployment of large models, approached through questions.',
+      html: 'en', site: 'Study Notes', motto: ['Each answer links to the concepts it needs, from the basics up.', 'Written with Claude.'],
       search: 'Search', searchLabel: 'Search entries, questions and topics', findsLabel: 'Search results', toc: 'Contents', jots: 'Queries',
       other: '中文', otherLang: 'zh-Hans', otherLabel: '以中文阅读',
       entries: 'Entries', questions: 'Questions', topics: 'Topics', question: 'Question', topic: 'Topic',
@@ -570,7 +571,7 @@
     main.innerHTML = `
       <article class="toc home">
         <h1 class="cover">${ui('site')}</h1>
-        <p class="motto">${ui('motto')}</p>
+        <p class="motto">${ui('motto').map(l => `<span>${l}</span>`).join('')}</p>
         <div class="toc-head"><h2>${ui('questions')}</h2></div>
         <ol class="entries asks">${listHome()}</ol>
         <p class="foot">${foot}</p>
