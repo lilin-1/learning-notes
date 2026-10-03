@@ -7,3 +7,5 @@
 $$x + F_1(\mathrm{LN}(x)) + F_2\big(\mathrm{LN}(x + F_1(\mathrm{LN}(x)))\big),$$
 
 输入 $x$ 原样出现在和式中；Post-LN 的输出为 $\mathrm{LN}\big(y + F_2(y)\big)$，其中 $y = \mathrm{LN}(x + F_1(x))$，$x$ 先后经过两次归一化。
+
+论文：[On Layer Normalization in the Transformer Architecture](https://arxiv.org/abs/2002.04745)（Xiong 等，2020）

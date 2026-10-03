@@ -3,3 +3,5 @@ A [[position interpolation]] method that treats frequencies separately. Dimensio
 Note: Interpolating all dimensions alike also slows down the fast ones, making adjacent positions hard to tell apart. Interpolating only the slow ones keeps short-range resolution while bringing long-range angles into the seen range. The original paper reports needing 10 times fewer fine-tuning tokens and 2.5 times fewer steps than earlier methods.
 
 Example: With $s = 32$, $\sqrt{1/t} = 0.1 \ln 32 + 1 \approx 1.35$, so the scores are multiplied by about $1.35^2 \approx 1.82$. DeepSeek-V3 used YaRN in two stages to extend its context from 4K to 32K and then to 128K, training 1000 steps each.
+
+Paper: [YaRN: Efficient Context Window Extension of Large Language Models](https://arxiv.org/abs/2309.00071) (Peng et al., 2023)

@@ -3,3 +3,5 @@ A [[speculative decoding]] method that adds a few extra decoding heads on top of
 Note: It needs no separate draft model: the heads are small and share the large model's trunk, which keeps deployment simple. Training only the new heads with the trunk frozen is called Medusa-1, whose output is identical to the original model's; the original paper reports a speedup of over 2.2 times. Fine-tuning together with the trunk is called Medusa-2 and reaches 2.3 to 2.8 times, but the trunk's output changes slightly.
 
 Example: With 3 heads, each taking its top 2 candidates, there are $2 \times 2 \times 2 = 8$ candidate sequences of length 3. Shared prefixes appear only once in the tree, which has $2 + 4 + 8 = 14$ nodes, and one forward pass verifies all the candidates.
+
+Paper: [Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads](https://arxiv.org/abs/2401.10774) (Cai et al., 2024)

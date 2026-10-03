@@ -7,3 +7,5 @@ $$\mathrm{RMSNorm}(x) = \gamma \odot \frac{x}{\sqrt{\frac{1}{d} \sum_{i=1}^{d} x
 注：去掉均值，是因为归一化的好处主要来自缩放而非平移。原论文的实验中，效果与层归一化相当，每个位置却少算一次均值、少做一次减法。如今的大模型多用它，并与 [[Pre-LN]] 一起使用。
 
 例：$x = (2, 4, 6, 8)$ 的均方根为 $\sqrt{(4 + 16 + 36 + 64) / 4} = \sqrt{30} \approx 5.48$。取 $\gamma = 1$ 并忽略 $\epsilon$，输出约为 $(0.37, 0.73, 1.10, 1.46)$；与层归一化不同，输出的均值不为 0。
+
+论文：[Root Mean Square Layer Normalization](https://arxiv.org/abs/1910.07467)（Zhang 与 Sennrich，2019）

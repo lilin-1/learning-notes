@@ -7,3 +7,5 @@ where $\gamma$ is a learned parameter and $\epsilon$ a small positive number tha
 Note: The mean is dropped because the benefit of normalization comes mainly from rescaling rather than shifting. In the original paper's experiments, it performs on par with layer normalization while computing one mean and one subtraction fewer per position. Today's large models mostly use it, together with [[Pre-LN]].
 
 Example: The root mean square of $x = (2, 4, 6, 8)$ is $\sqrt{(4 + 16 + 36 + 64) / 4} = \sqrt{30} \approx 5.48$. With $\gamma = 1$ and $\epsilon$ ignored, the output is about $(0.37, 0.73, 1.10, 1.46)$; unlike layer normalization, the output does not have mean 0.
+
+Paper: [Root Mean Square Layer Normalization](https://arxiv.org/abs/1910.07467) (Zhang and Sennrich, 2019)

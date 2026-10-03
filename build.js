@@ -559,6 +559,20 @@ function arrange(admitted, toc) {
 const files = (dir = WORDS) => fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.md') && !/^[_.]/.test(f)) : [];
 const read = (f, dir = WORDS) => fs.readFileSync(path.join(dir, f), 'utf8').replace(/\r\n?/g, '\n').trim();
 
+// 论文：词条末尾以「论文：」（英文稿为「Paper:」）起头的行，一行一篇，写作 [标题](网址)，其后注明作者与年份。
+const PAPER = { zh: '论文：', en: 'Paper:' };
+function splitPapers(src, lang = 'zh') {
+  const keep = [], papers = [], bad = [];
+  for (const line of src.split('\n')) {
+    const t = line.trim();
+    if (!t.startsWith(PAPER[lang])) { keep.push(line); continue; }
+    const m = t.slice(PAPER[lang].length).trim().match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)\s*(.*)$/);
+    if (m) papers.push({ t: m[1].trim(), u: m[2], n: m[3].trim() }); else bad.push(t);
+  }
+  return { body: keep.join('\n').trim(), papers, bad };
+}
+const paperErrors = (bad, lang) => bad.map(t => `「${t.slice(0, 20)}…」：论文须写作 ${PAPER[lang]}[标题](网址)，其后注明作者与年份`);
+
 // 正文、注、例各成一块，首段以标签起头。
 function blocks(e, has, label, lang = 'zh') {
   const mark = MARKS[lang];
@@ -574,7 +588,12 @@ const nameOf = f => path.basename(f, '.md').normalize('NFC').trim();
 function build() {
   const collate = new Intl.Collator('zh').compare;
   const entries = files()
-    .map(f => ({ name: nameOf(f), ...audit(nameOf(f), read(f)) }))
+    .map(f => {
+      const { body, papers, bad } = splitPapers(read(f));
+      const e = { name: nameOf(f), ...audit(nameOf(f), body), papers };
+      e.errors.push(...paperErrors(bad, 'zh'));
+      return e;
+    })
     .sort((a, b) => collate(a.name, b.name));
 
   const admitted = new Map(entries.filter(e => !e.errors.length).map(e => [e.name, e]));
@@ -614,6 +633,7 @@ function build() {
       ch: ci,
       en: en.get(name) ?? '',
       ...blocks(e, has, '定义'),
+      ...(e.papers.length ? { papers: e.papers } : {}),
       text: plain(e.text, e.spans).replace(/\s+/g, ' ').trim(),
       pre: prerequisites(name),
       direct: direct(name),
@@ -679,9 +699,13 @@ function build() {
   for (const name of order) {
     const src = pair(EN_WORDS, name);
     if (src === null) continue;
-    const e = { name: `${name}（英文）`, ...auditEn(name, src, { lookup, enName, zhLinks: admitted.get(name).links }) };
+    const { body, papers, bad } = splitPapers(src, 'en');
+    const e = { name: `${name}（英文）`, ...auditEn(name, body, { lookup, enName, zhLinks: admitted.get(name).links }) };
+    e.errors.push(...paperErrors(bad, 'en'));
+    const zhUrls = admitted.get(name).papers.map(x => x.u).join(' '), enUrls = papers.map(x => x.u).join(' ');
+    if (zhUrls !== enUrls) e.hints.push('列出的论文与中文稿不一致');
     enAudits.push(e);
-    if (!e.errors.length) enWords[name] = { title: cap(enName(name)), sub: cjk(name) ? name : en.get(name) ?? '', ...blocks(e, has, 'Definition', 'en'), text: plain(e.text, e.spans).replace(/\s+/g, ' ').trim() };
+    if (!e.errors.length) enWords[name] = { title: cap(enName(name)), sub: cjk(name) ? name : en.get(name) ?? '', ...blocks(e, has, 'Definition', 'en'), ...(papers.length ? { papers } : {}), text: plain(e.text, e.spans).replace(/\s+/g, ' ').trim() };
   }
   const enQuestions = {};
   for (const q of questions) {
@@ -753,7 +777,10 @@ function report(entries, count, tocHints = [], enCount = null) {
 function fix() {
   const changed = [];
   for (const [dir, f] of [WORDS, QUESTIONS, TOPICS].flatMap(dir => files(dir).map(f => [dir, f]))) {
-    const src = read(f, dir), out = typeset(src);
+    const src = read(f, dir);
+    const { body, papers } = dir === WORDS ? splitPapers(src) : { body: src, papers: [] };
+    const tail = src.split('\n').filter(l => l.trim().startsWith(PAPER.zh)).join('\n');
+    const out = papers.length ? `${typeset(body)}\n\n${tail}` : typeset(src);
     if (out !== src) {
       fs.writeFileSync(path.join(dir, f), `${out}\n`);
       changed.push(nameOf(f));

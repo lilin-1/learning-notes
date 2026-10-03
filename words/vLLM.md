@@ -3,3 +3,5 @@
 注：它的吞吐优势主要来自调度与显存管理，而非某个更快的算子。分块的缓存让一张卡容纳更多并发序列，连续批处理让批始终满员；注意力等算子则交给 [[FlashAttention]] 等现成的内核。
 
 例：`vllm serve facebook/opt-13b --tensor-parallel-size 4` 在 4 张卡上以张量并行启动服务，此后任意 OpenAI 客户端都可以向 `/v1/chat/completions` 发送请求。
+
+论文：[Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180)（Kwon 等，2023）

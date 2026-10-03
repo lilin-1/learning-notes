@@ -7,3 +7,5 @@ and after the bias corrections $\hat{m}_t = m_t / (1 - \beta_1^t)$ and $\hat{v}_
 Note: Dividing by $\sqrt{\hat{v}_t}$ normalizes by the gradient's historical magnitude: parameters with consistently large gradients take smaller steps, rarely updated ones relatively larger steps, which makes the method less sensitive to the learning rate. The price is two extra state values, $m$ and $v$, per parameter, so the optimizer state takes twice the memory of the parameters themselves.
 
 Example: Let $\beta_1 = 0.9$, $\beta_2 = 0.999$ and the first gradient $g_1 = 2$. Then $m_1 = 0.2$ and $v_1 = 0.004$; after correction $\hat{m}_1 = 2$ and $\hat{v}_1 = 4$, so the step is about $\eta \cdot 2 / 2 = \eta$. With a gradient of $200$ instead, the step is still about $\eta$: the first step does not depend on the scale of the gradient.
+
+Paper: [Adam: A Method for Stochastic Optimization](https://arxiv.org/abs/1412.6980) (Kingma and Ba, 2014)

@@ -179,6 +179,12 @@
   .refs a { color: var(--ink); }
   .refs a:hover { color: var(--indigo); }
   .refs .sec { margin-right: .35em; }
+  /* 论文：标签在左，一篇一行，标题作斜体 */
+  .papers { display: flex; gap: 1.7em; margin: 0 0 .6rem; }
+  .papers-label { flex: none; font: 600 .76rem/1.9 var(--hei); letter-spacing: .1em; color: var(--indigo); }
+  .papers-list span { display: block; }
+  .papers-list span + span { margin-top: .35em; }
+  .papers-list a { font-style: italic; }
   /* 页脚的参考列表先只列标签与条数，点开标签才展开，一次一项。 */
   .facets { display: flex; flex-wrap: wrap; gap: .2rem 1.7em; margin: 0 0 .5rem; }
   .facet {
@@ -383,11 +389,11 @@
   }
   /* 英文版：西文不加字距，段落可断词；标签用衬线粗体、后加句点；强调用斜体。 */
   :root:lang(en) body { line-height: 1.7; }
-  :root:lang(en) :is(.running, .cover, .motto, .toc-head h2, .jots-panel h2, .facet, .facet .n, .label, .entries li.chap > .toc-t, .entries li.chap > .sec, .entry h1, .question h1, .part h2, .fold, .turn .dir, .finds-label, #find, .jot-btn, .jot-actions button, .jot .meta button, .jots-panel header button) { letter-spacing: normal; }
+  :root:lang(en) :is(.running, .cover, .motto, .toc-head h2, .jots-panel h2, .facet, .facet .n, .papers-label, .label, .entries li.chap > .toc-t, .entries li.chap > .sec, .entry h1, .question h1, .part h2, .fold, .turn .dir, .finds-label, #find, .jot-btn, .jot-actions button, .jot .meta button, .jots-panel header button) { letter-spacing: normal; }
   :root:lang(en) :is(.def, .remark, .ex, .part, .intro) > p { hyphens: auto; }
   :root:lang(en) .label { margin-right: .45em; font: 700 1rem/1 var(--num); }
   :root:lang(en) .label::after { content: '.'; }
-  :root:lang(en) :is(.facet, .finds-label) { font-family: var(--num); }
+  :root:lang(en) :is(.facet, .finds-label, .papers-label) { font-family: var(--num); }
   :root:lang(en) .motto { font-style: italic; }
   :root:lang(en) em { font-style: italic; -webkit-text-emphasis: none; text-emphasis: none; }
   :root:lang(en) strong { font-family: inherit; font-weight: 700; }
@@ -447,7 +453,7 @@
       tocFoot: (c, n) => `共 ${c} 章 ${n} 条。章内每条排在它链接到的词条之后。`,
       noFinds: '没有匹配的词条、问题或专题。',
       unwritten: w => `此条尚未写成。新建 <code>words/${esc(w)}.md</code>，写下它的解释。`, unwrittenNote: '此条尚未写成。',
-      pre: '预备', cited: '见于', askNext: '接着问', route: '路线', covers: '涉及',
+      papers: '论文', pre: '预备', cited: '见于', askNext: '接着问', route: '路线', covers: '涉及',
       prev: '上一条', next: '下一条', prevQ: '上一问', nextQ: '下一问',
       source: v => `依据 ${v} 源码`, notes: '页边注', fold: '收起',
       jot: '记下疑问', jotPlaceholder: '写下疑问', jotLabel: '疑问', editLabel: '修改疑问',
@@ -470,7 +476,7 @@
       tocFoot: (c, n) => `${c} chapters, ${n} entries. Within a chapter, each entry comes after the entries it links to.`,
       noFinds: 'No matching entries, questions or topics.',
       unwritten: w => `This entry has not been written yet. Create <code>words/${esc(w)}.md</code> with its explanation.`, unwrittenNote: 'Not written yet.',
-      pre: 'Prerequisites', cited: 'Cited by', askNext: 'Ask next', route: 'Route', covers: 'Entries',
+      papers: 'Papers', pre: 'Prerequisites', cited: 'Cited by', askNext: 'Ask next', route: 'Route', covers: 'Entries',
       prev: 'Previous', next: 'Next', prevQ: 'Previous', nextQ: 'Next',
       source: v => `Based on the source code of ${v}`, notes: 'Margin notes', fold: 'Close',
       jot: 'Jot a query', jotPlaceholder: 'Write your query', jotLabel: 'Query', editLabel: 'Edit query',
@@ -690,12 +696,15 @@
       : `<section class="def"><p class="none">${ui('unwritten')(w)}</p></section>`;
     const prev = i > 0 ? ORDER[i - 1] : null;
     const next = i !== -1 && i < ORDER.length - 1 ? ORDER[i + 1] : null;
+    // 出处：词条所依据的论文，标题链接到原文。
+    const papers = (c?.papers ?? []).map(p => `<span><a href="${esc(p.u)}" target="_blank" rel="noopener" lang="en">${esc(p.t)}</a>${p.n ? `${/^[（，]/.test(p.n) ? '' : ' '}${esc(p.n)}` : ''}</span>`);
     main.innerHTML = `
       <article class="entry">
         <h1>${sec(w)}${esc(nameOf(w))}</h1>
         ${sub ? `<p class="en" lang="${langOf(sub)}">${esc(sub)}</p>` : ''}
         ${body}
         <footer class="refs">
+          ${papers.length ? `<p class="papers"><span class="papers-label">${ui('papers')}</span><span class="papers-list">${papers.join('')}</span></p>` : ''}
           ${facets([
             [ui('questions'), asked.map(askTo), 'lines'],
             [ui('pre'), pre.map(p => turnTo(p, e.direct.includes(p) ? '' : 'far')), 'inline'],

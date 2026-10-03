@@ -3,3 +3,5 @@ An implementation of [[self-attention]] that cuts the [[KV cache]] into fixed-si
 Note: Separating logical from physical positions brings two benefits: allocation need not be contiguous, so there is no fragmentation, and identical blocks can be shared by several sequences and stored only once. The price is indirect addressing through the block table during attention, which makes the [[kernel]] more complex.
 
 Example: With a block size of 16, a sequence of 100 [[token|tokens]] occupies $\lceil 100 / 16 \rceil = 7$ blocks, or 112 slots, only 12 of them empty; reserving the maximum length of 2048 would leave 1948 empty.
+
+Paper: [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) (Kwon et al., 2023)

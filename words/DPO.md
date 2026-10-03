@@ -2,8 +2,10 @@
 
 $$\mathcal{L} = \log\Big(1 + e^{-\beta (\Delta_w - \Delta_l)}\Big), \quad \Delta = \log \frac{\pi_\theta(y \mid x)}{\pi_{\mathrm{ref}}(y \mid x)},$$
 
-即让较好的回答相对参考模型提高的对数概率，多于较差的回答。
+其中 $\pi_{\mathrm{ref}}$ 是参考模型，通常是指令微调后的模型，$\beta$ 控制偏离它的程度。损失让较好的回答相对参考模型提高的对数概率，多于较差的回答。
 
-注：它的依据是一个等式：在 [[基于人类反馈的强化学习|RLHF]] 带 KL 约束的目标下，最优策略与奖励一一对应，$r = \beta \log \frac{\pi}{\pi_{\mathrm{ref}}}$ 加上一个只与提示有关的项。把这一关系代入[[奖励模型]]的损失，就得到只含策略的损失。它只需普通的有监督训练，训练中不必采样，也不需要价值模型。
+注：它的依据是一个等式：在 [[基于人类反馈的强化学习|RLHF]] 带 [[KL 散度|KL 惩罚]]的目标下，最优策略与奖励一一对应，$r = \beta \log \frac{\pi}{\pi_{\mathrm{ref}}}$ 加上一个只与提示有关的项。把这一关系代入[[奖励模型]]的损失，就得到只含策略的损失。它只需普通的有监督训练，训练中不必采样，也不需要价值模型。
 
 例：取 $\beta = 0.1$。较好的回答对数概率比参考模型高 3，较差的低 2，则 $\beta(\Delta_w - \Delta_l) = 0.5$，损失为 $\ln(1 + e^{-0.5}) \approx 0.47$。差距拉大到 $\beta(\Delta_w - \Delta_l) = 2$ 时，损失降为约 0.13。
+
+论文：[Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290)（Rafailov 等，2023）

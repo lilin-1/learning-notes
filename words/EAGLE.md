@@ -3,3 +3,5 @@
 注：预测特征比直接预测词元容易，因为特征变化平滑，词元却是离散的选择。把下一个词元一并输入，又消除了「下一步走哪个词元」的不确定。后续的 EAGLE-2 按草稿的置信度动态调整候选树，EAGLE-3 改为直接预测词元，并融合多层的特征。
 
 例：原论文中，LLaMA2-Chat 70B 在三项任务上提速 2.7 至 3.5 倍：HumanEval、GSM8K 与 Alpaca。在 MT-Bench 上提速 3.0 倍。
+
+论文：[EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty](https://arxiv.org/abs/2401.15077)（Li 等，2024）

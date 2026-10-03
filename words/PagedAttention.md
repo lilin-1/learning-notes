@@ -3,3 +3,5 @@
 注：块表把逻辑位置与物理位置分开，带来两个好处：分配不必连续，也就没有碎片；内容相同的块可以由多条序列共用，只存一份。代价是注意力计算须经块表间接寻址，[[内核]]实现更复杂。
 
 例：块大小取 16。一条已有 100 个[[词元]]的序列占 $\lceil 100 / 16 \rceil = 7$ 块、112 个槽位，只空 12 个；若按最大长度 2048 预留，则空 1948 个。
+
+论文：[Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180)（Kwon 等，2023）

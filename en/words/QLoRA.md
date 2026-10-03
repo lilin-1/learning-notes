@@ -3,3 +3,5 @@ A method that [[quantization|quantizes]] the frozen pretrained weights to 4 bits
 Note: It also cuts the memory of the frozen weights: fine-tuning a 65B model went from over 780 GB of memory to under 48 GB, a single GPU. Two further tricks help. The scale factors used for quantization are quantized once more, saving about 0.37 bits per parameter, and optimizer state is paged out to CPU memory when GPU memory runs short. The original paper also found that matching full fine-tuning requires adding increments to all linear layers.
 
 Example: 65 billion parameters in 4 bits take about $65 \times 10^9 \times 0.5 \approx 33$ GB; together with the increment, activations and optimizer state, they still fit on one 48 GB GPU.
+
+Paper: [QLoRA: Efficient Finetuning of Quantized LLMs](https://arxiv.org/abs/2305.14314) (Dettmers et al., 2023)

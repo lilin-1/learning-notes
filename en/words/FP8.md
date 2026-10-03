@@ -3,3 +3,5 @@
 Note: 8 bits represent too few numbers to cover a tensor's range by the format alone, so FP8 is always used with scale factors. The tensor is first multiplied by a factor that brings its maximum near the top of the format, then converted to FP8. The finer the scaling, the higher the precision. In training DeepSeek-V3, activations take one factor per 128 elements and weights one per $128 \times 128$ block, with E4M3 for all tensors.
 
 Example: The maximum of E4M3 is $1.75 \times 2^8 = 448$. For a tensor whose largest absolute value is 3.5, multiplying by $448 / 3.5 = 128$ before conversion puts the largest element exactly at 448.
+
+Paper: [FP8 Formats for Deep Learning](https://arxiv.org/abs/2209.05433) (Micikevicius et al., 2022)

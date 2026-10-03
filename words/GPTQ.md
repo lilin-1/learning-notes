@@ -3,3 +3,5 @@
 注：把每个权重各自四舍五入到最近的格点，误差会独立地累积；GPTQ 让后面的权重替前面的误差找补，同样的位数下误差小得多。它不需要重新训练，只需少量校准数据，原论文在约 4 个 GPU 小时内把 1750 亿参数的 OPT 量化到 3 或 4 位。
 
 例：OPT-175B 以 16 位存储约 350 GB，要 5 张 80 GB 的卡；量化到 3 位后约 63 GB，一张卡即可放下。原论文中，端到端的生成在 A100 上快了约 3.25 倍。
+
+论文：[GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers](https://arxiv.org/abs/2210.17323)（Frantar 等，2022）

@@ -7,3 +7,5 @@ Example: Stacking two sublayers $F_1$ and $F_2$, Pre-LN outputs
 $$x + F_1(\mathrm{LN}(x)) + F_2\big(\mathrm{LN}(x + F_1(\mathrm{LN}(x)))\big),$$
 
 in which the input $x$ appears unchanged in the sum; Post-LN outputs $\mathrm{LN}\big(y + F_2(y)\big)$ with $y = \mathrm{LN}(x + F_1(x))$, so $x$ passes through two normalizations in turn.
+
+Paper: [On Layer Normalization in the Transformer Architecture](https://arxiv.org/abs/2002.04745) (Xiong et al., 2020)

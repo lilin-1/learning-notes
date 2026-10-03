@@ -3,3 +3,5 @@
 注：它不需要另一个草稿模型：各头很小，与大模型共用主干，部署简单。只训练新加的头、冻结主干时，称为 Medusa-1，输出与原模型完全一致，原论文报告提速 2.2 倍以上。与主干一同微调时称为 Medusa-2，可提速 2.3 至 2.8 倍，但主干的输出会略有改变。
 
 例：取 3 个头，每个头取前 2 个候选，组合起来共 $2 \times 2 \times 2 = 8$ 条长为 3 的候选序列。前缀相同的部分在树中只出现一次，树共有 $2 + 4 + 8 = 14$ 个节点，一次前向即可验证全部候选。
+
+论文：[Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads](https://arxiv.org/abs/2401.10774)（Cai 等，2024）

@@ -3,3 +3,5 @@ An algorithm for [[scaled dot-product attention]] that never writes out the full
 Note: The bottleneck of attention is often not the multiply–adds but memory traffic. A standard implementation writes the $n \times n$ scores to GPU memory and reads them back for softmax, steps of very low [[arithmetic intensity]]. FlashAttention removes these round trips, and its extra memory grows as $n$ instead of $n^2$, so the longer the sequence, the more it saves. The number of multiply–adds does not decrease. The price is a kernel that has to be written specifically for each generation of GPU.
 
 Example: For a sequence of length 32768, one head's score matrix has $32768^2 = 2^{30}$ numbers, 2 GiB in 16-bit floating point. Computing 32 heads at once takes 64 GiB, more than many GPUs hold. FlashAttention stores only $m$ and $\ell$ in addition for each query, 65536 numbers per head.
+
+Paper: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135) (Dao et al., 2022)

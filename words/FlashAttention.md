@@ -3,3 +3,5 @@
 注：注意力的瓶颈往往不在乘加，而在显存读写。标准实现要把 $n \times n$ 的评分写入显存，再读回来做 softmax，这几步的[[算术强度]]很低。FlashAttention 省去这些往返，额外的显存也从随 $n^2$ 增长降为随 $n$ 增长，序列越长，省得越多。乘加的次数并未减少。代价是内核须针对每一代显卡专门编写。
 
 例：长 32768 的序列，一个头的评分矩阵有 $32768^2 = 2^{30}$ 个数，以 16 位浮点存储即 2 GiB。32 个头同时计算便是 64 GiB，超过许多显卡的容量。FlashAttention 每个查询只多存 $m$ 与 $\ell$，一个头共 65536 个数。
+
+论文：[FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)（Dao 等，2022）

@@ -3,3 +3,5 @@
 注：对所有维度一律插值，会把转得快的维度也压慢，模型就难以分辨相邻的位置。只对慢的维度插值，既保住近距离的分辨率，又让远距离的角度落在见过的范围内。原论文称，与此前的方法相比，它所需的微调词元少 10 倍、步数少 2.5 倍。
 
 例：$s = 32$ 时，$\sqrt{1/t} = 0.1 \ln 32 + 1 \approx 1.35$，即评分乘以约 $1.35^2 \approx 1.82$。DeepSeek-V3 用 YaRN 分两个阶段把上下文从 4K 延长到 32K，再到 128K，各训练 1000 步。
+
+论文：[YaRN: Efficient Context Window Extension of Large Language Models](https://arxiv.org/abs/2309.00071)（Peng 等，2023）

@@ -3,3 +3,5 @@
 注：它在易写与高效之间取中：比用 CUDA C++ 直接写短得多，性能常接近手写的内核，[[分块]]的大小仍由程序员选定。PyTorch 的 `torch.compile` 在显卡上默认生成 Triton 内核；同一份程序可以编译到 NVIDIA 与 AMD 的显卡。
 
 例：把两个长 $2^{20}$ 的向量相加，取块大小 1024，启动 1024 个程序实例。第 $p$ 个实例用 `tl.program_id(0)` 取得 $p$，用 `tl.arange(0, 1024)` 算出本块的下标 $1024p, \dots, 1024p + 1023$，一次读入 `x` 与 `y` 的这一块，相加后写回。
+
+论文：[Triton: An Intermediate Language and Compiler for Tiled Neural Network Computations](https://doi.org/10.1145/3315508.3329973)（Tillet 等，2019）
