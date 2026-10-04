@@ -193,6 +193,8 @@
   }
   .facet .n { margin-left: .45em; font: 400 .8rem var(--num); letter-spacing: 0; color: var(--quiet); }
   .facet:hover .n { color: var(--indigo); }
+  .facets .amend { margin-left: auto; font: .76rem/1.9 var(--hei); letter-spacing: .1em; color: var(--quiet); }
+  .facets .amend:hover { color: var(--indigo); }
   .facet[aria-expanded="true"] { text-decoration: underline 1px; text-underline-offset: .4em; }
   .facet-body { margin: .1rem 0 .9rem; animation: note-in .15s ease-out; }
   .facet-body.inline a { margin-right: 1em; white-space: nowrap; }   /* 各项之间另有一个空格，西文靠它折行 */
@@ -294,7 +296,7 @@
   }
   .entries li.chap { margin-top: 1.7rem; padding-bottom: .15rem; }
   .entries li.chap:first-child { margin-top: .3rem; }
-  .entries li.chap > .sec { text-align: right; font-size: .9rem; letter-spacing: .05em; }
+  .entries li.chap > .sec { justify-self: end; white-space: nowrap; text-align: right; font-size: .9rem; letter-spacing: .05em; }   /* 「第十五章」宽于编号栏，向左伸出而不折行 */
   .entries li.chap > .toc-t { grid-column: 2 / -1; font-weight: 700; font-size: 1.05rem; letter-spacing: .08em; }
   .entries a:hover > .toc-t, .entries a.sel > .toc-t { color: var(--indigo); }
   .entries a.sel { background: var(--tint); box-shadow: 0 0 0 .3rem var(--tint); }
@@ -307,6 +309,8 @@
   .questions a > .toc-t, .topics a > .toc-t { grid-column: 2 / -1; }
   .toc .foot { margin: 2.2rem 0 0; font: .8rem/1.9 var(--song); color: var(--quiet); }
   .toc .foot a { margin-left: 1.2em; color: var(--indigo); }
+  .toc .join { margin-top: .4rem; }
+  .toc .join a { margin: 0; }
 
   /* 疑问：选中正文记下，右侧抽屉中列出 */
   .jot-btn {
@@ -360,6 +364,8 @@
   .jot blockquote { font-size: .88rem; line-height: 1.75; }
   .jot .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1.1rem; font: .74rem/1.6 var(--song); color: var(--quiet); }
   .jot .meta a { color: var(--indigo); }
+  .jot .meta a.jot-submit { font: .78rem/1.6 var(--hei); letter-spacing: .06em; color: var(--quiet); }
+  .jot .meta a.jot-submit:hover { color: var(--ink); }
   .jots-panel .none { font: .88rem/1.9 var(--song); }
   @keyframes slide-in { from { transform: translateX(1.5rem); opacity: 0; } }
 
@@ -390,11 +396,11 @@
   }
   /* 英文版：西文不加字距，段落可断词；标签用衬线粗体、后加句点；强调用斜体。 */
   :root:lang(en) body { line-height: 1.7; }
-  :root:lang(en) :is(.running, .cover, .motto, .toc-head h2, .jots-panel h2, .facet, .facet .n, .papers-label, .label, .entries li.chap > .toc-t, .entries li.chap > .sec, .entry h1, .question h1, .part h2, .fold, .turn .dir, .finds-label, #find, .jot-btn, .jot-actions button, .jot .meta button, .jots-panel header button) { letter-spacing: normal; }
+  :root:lang(en) :is(.running, .cover, .motto, .toc-head h2, .jots-panel h2, .facet, .facet .n, .papers-label, .label, .entries li.chap > .toc-t, .entries li.chap > .sec, .entry h1, .question h1, .part h2, .fold, .turn .dir, .finds-label, #find, .jot-btn, .jot-actions button, .jot .meta button, .jot .meta a.jot-submit, .jots-panel header button, .facets .amend) { letter-spacing: normal; }
   :root:lang(en) :is(.def, .remark, .ex, .part, .intro) > p { hyphens: auto; }
   :root:lang(en) .label { margin-right: .45em; font: 700 1rem/1 var(--num); }
   :root:lang(en) .label::after { content: '.'; }
-  :root:lang(en) :is(.facet, .finds-label, .papers-label) { font-family: var(--num); }
+  :root:lang(en) :is(.facet, .finds-label, .papers-label, .facets .amend) { font-family: var(--num); }
   :root:lang(en) .motto { font-style: italic; }
   :root:lang(en) em { font-style: italic; -webkit-text-emphasis: none; text-emphasis: none; }
   :root:lang(en) strong { font-family: inherit; font-weight: 700; }
@@ -437,6 +443,11 @@
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
   const hm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
+  // 参与：疑问可提交为 GitHub 上的 issue；每页末尾链接到它的源文件，在 GitHub 上修改即可提交 PR。
+  const REPO = 'https://github.com/lilin-1/learning-notes';
+  const SITE = 'https://lilin-1.github.io/learning-notes/';
+  const clip = (t, n) => t.length > n ? `${t.slice(0, n)}…` : t;
+
   // 语言：中文或英文，记在本机。地址仍用中文词条名，两种语言下同一个地址是同一页。
   const LANG = 'learning-notes/lang';
   let lang = localStorage.getItem(LANG) === 'en' ? 'en' : 'zh';
@@ -454,12 +465,16 @@
       tocFoot: (c, n) => `共 ${c} 章 ${n} 条。章内每条排在它链接到的词条之后。`,
       noFinds: '没有匹配的词条、问题或专题。',
       unwritten: w => `此条尚未写成。新建 <code>words/${esc(w)}.md</code>，写下它的解释。`, unwrittenNote: '此条尚未写成。',
+      join: `发现错误，可点每页末尾的「勘误」，在 GitHub 上修改并提交 PR。有想弄懂的问题，可在「疑问」中提交，或直接<a href="${REPO}/issues" target="_blank" rel="noopener">提交 issue</a>，讲义会据此补充。`,
+      amend: '勘误', amendLabel: '在 GitHub 上修改此页的源文件',
       papers: '论文', pre: '预备', cited: '见于', askNext: '接着问', route: '路线', covers: '涉及',
       prev: '上一条', next: '下一条', prevQ: '上一问', nextQ: '下一问',
       source: v => `依据 ${v} 源码`, notes: '页边注', fold: '收起',
       jot: '记下疑问', jotPlaceholder: '写下疑问', jotLabel: '疑问', editLabel: '修改疑问',
       submit: `${isMac ? '⌘' : 'Ctrl'}＋回车保存`, save: '保存', cancel: '取消', saved: '已记下',
-      copyAll: '全部复制', close: '关闭', edit: '修改', copy: '复制', remove: '删除', copied: '已复制',
+      copyAll: '全部复制', close: '关闭', edit: '修改', copy: '复制', remove: '删除', copied: '已复制', submitIssue: '提交',
+      jotsNote: '疑问只存在本机。点「提交」，可以把它作为 issue 发到 GitHub，讲义会据此补充。',
+      issueTitle: j => `疑问：${clip(j.ask, 40)}`, issueLink: '链接：',
       noJots: '尚无疑问。在正文中选中一段文字，点「记下疑问」即可记下。',
       jotText: j => `疑问：${j.ask}\n原文：「${j.quote}」\n出处：${j.title}`,
       when: d => `${d.getMonth() + 1} 月 ${d.getDate()} 日 ${hm(d)}`,
@@ -477,18 +492,25 @@
       tocFoot: (c, n) => `${c} chapters, ${n} entries. Within a chapter, each entry comes after the entries it links to.`,
       noFinds: 'No matching entries, questions or topics.',
       unwritten: w => `This entry has not been written yet. Create <code>words/${esc(w)}.md</code> with its explanation.`, unwrittenNote: 'Not written yet.',
+      join: `To correct an error, use “Edit” at the end of any page to change its source on GitHub and open a pull request. To ask about something, submit it from “Queries” or <a href="${REPO}/issues" target="_blank" rel="noopener">open an issue</a>; the notes will be extended to answer it.`,
+      amend: 'Edit', amendLabel: 'Edit the source of this page on GitHub',
       papers: 'Papers', pre: 'Prerequisites', cited: 'Cited by', askNext: 'Ask next', route: 'Route', covers: 'Entries',
       prev: 'Previous', next: 'Next', prevQ: 'Previous', nextQ: 'Next',
       source: v => `Based on the source code of ${v}`, notes: 'Margin notes', fold: 'Close',
       jot: 'Jot a query', jotPlaceholder: 'Write your query', jotLabel: 'Query', editLabel: 'Edit query',
       submit: `${isMac ? '⌘' : 'Ctrl'}+Enter to save`, save: 'Save', cancel: 'Cancel', saved: 'Saved',
-      copyAll: 'Copy all', close: 'Close', edit: 'Edit', copy: 'Copy', remove: 'Delete', copied: 'Copied',
+      copyAll: 'Copy all', close: 'Close', edit: 'Edit', copy: 'Copy', remove: 'Delete', copied: 'Copied', submitIssue: 'Submit',
+      jotsNote: 'Queries are kept only on this device. “Submit” posts one as an issue on GitHub, so that the notes can be extended to answer it.',
+      issueTitle: j => `Query: ${clip(j.ask, 60)}`, issueLink: 'Link: ',
       noJots: 'No queries yet. Select some text and choose “Jot a query”.',
       jotText: j => `Query: ${j.ask}\nQuote: “${j.quote}”\nSource: ${j.title}`,
       when: d => `${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}, ${hm(d)}`,
     },
   };
   const ui = k => UI[lang][k];
+  const issueUrl = j => `${REPO}/issues/new?title=${encodeURIComponent(ui('issueTitle')(j))}&body=${encodeURIComponent(`${jotText(j)}\n${ui('issueLink')}${SITE}${href(j.key)}`)}`;
+  const amend = file => `<a class="amend" href="${REPO}/edit/main/${file.split('/').map(encodeURIComponent).join('/')}" target="_blank" rel="noopener" title="${ui('amendLabel')}">${ui('amend')}</a>`;
+  const sourceOf = (dir, name, en) => `${english() && en ? 'en/' : ''}${dir}/${name}.md`;   // 当前语言下显示的那份源文件
 
   // 当前语言下的内容。英文稿缺失或未收录时，显示中文稿。
   const english = () => lang === 'en';
@@ -575,6 +597,7 @@
         <div class="toc-head"><h2>${ui('questions')}</h2></div>
         <ol class="entries asks">${listHome()}</ol>
         <p class="foot">${foot}</p>
+        ${window.WIKI ? `<p class="foot join">${ui('join')}</p>` : ''}
       </article>`;
   }
 
@@ -711,7 +734,7 @@
             [ui('pre'), pre.map(p => turnTo(p, e.direct.includes(p) ? '' : 'far')), 'inline'],
             [ui('cited'), seen.map(s => turnTo(s)), 'inline'],
             [ui('topics'), treated.map(topicTo), 'lines'],
-          ])}
+          ], e ? amend(sourceOf('words', w, EN.words[w])) : '')}
           <nav class="turn">
             ${prev ? `<span><span class="dir">${ui('prev')}</span>${turnTo(prev)}</span>` : '<span></span>'}
             ${next ? `<span><span class="dir">${ui('next')}</span>${turnTo(next)}</span>` : ''}
@@ -755,7 +778,7 @@
             [ui('askNext'), next.map(askTo), 'lines'],
             [ui('route'), x.route.map((w, k) => `<a href="${href(w)}" data-go="${esc(w)}"><span class="step">${circled(k)}</span>${sec(w)}${esc(nameOf(w))}</a>`), 'inline'],
             [ui('pre'), x.pre.map(p => turnTo(p, 'far')), 'inline'],
-          ])}
+          ], amend(sourceOf('questions', x.q, EN.questions[x.q])))}
           <nav class="turn">
             ${i > 0 ? `<span><span class="dir">${ui('prevQ')}</span>${askTo(i - 1)}</span>` : '<span></span>'}
             ${i < QUESTIONS.length - 1 ? `<span><span class="dir">${ui('nextQ')}</span>${askTo(i + 1)}</span>` : ''}
@@ -780,17 +803,17 @@
         <div class="intro">${c.intro}</div>
         ${c.sections.map((s, k) => `<section class="part" id="part-${k}"><h2><span class="sec">§${k + 1}</span>${s.h}</h2>${s.html}</section>`).join('')}
         <footer class="refs">
-          ${facets([[ui('covers'), x.route.map(w => turnTo(w)), 'inline']])}
+          ${facets([[ui('covers'), x.route.map(w => turnTo(w)), 'inline']], amend(sourceOf('topics', x.t, EN.topics[x.t])))}
         </footer>
       </article>`;
     markHere(main);
     fitMath(main);
   }
 
-  // 页脚的参考列表：list 中每项为 [标签, 链接的 HTML 数组, 排法]，排法为 inline（一行排开）或 lines（每项一行）。
-  function facets(list) {
+  // 页脚的参考列表：list 中每项为 [标签, 链接的 HTML 数组, 排法]，排法为 inline（一行排开）或 lines（每项一行）；extra 排在同一行的末尾。
+  function facets(list, extra = '') {
     const shown = list.filter(([, items]) => items.length);
-    return `<div class="facets">${shown.map(([label, items], k) => `<button type="button" class="facet" aria-expanded="false" data-facet="${k}">${label}<span class="n">${items.length}</span></button>`).join('')}</div>`
+    return `<div class="facets">${shown.map(([label, items], k) => `<button type="button" class="facet" aria-expanded="false" data-facet="${k}">${label}<span class="n">${items.length}</span></button>`).join('')}${extra}</div>`
       + shown.map(([, items, kind], k) => `<div class="facet-body ${kind}" data-facet-body="${k}" hidden>${items.join(kind === 'inline' ? ' ' : '')}</div>`).join('');
   }
 
@@ -992,8 +1015,8 @@
         <section class="jot" data-id="${j.id}">
           <p class="ask">${esc(j.ask)}</p>
           <blockquote>${esc(j.quote)}</blockquote>
-          <div class="meta"><a href="${href(j.key)}" data-go="${esc(j.key)}">${esc(j.title)}</a><span>${when(j.time)}</span><button type="button" class="jot-edit">${ui('edit')}</button><button type="button" class="jot-copy">${ui('copy')}</button><button type="button" class="jot-delete">${ui('remove')}</button></div>
-        </section>`).join('') : `<p class="none">${ui('noJots')}</p>`}`;
+          <div class="meta"><a href="${href(j.key)}" data-go="${esc(j.key)}">${esc(j.title)}</a><span>${when(j.time)}</span><button type="button" class="jot-edit">${ui('edit')}</button><button type="button" class="jot-copy">${ui('copy')}</button><a class="jot-submit" href="${issueUrl(j)}" target="_blank" rel="noopener">${ui('submitIssue')}</a><button type="button" class="jot-delete">${ui('remove')}</button></div>
+        </section>`).join('') + `<p class="none">${ui('jotsNote')}</p>` : `<p class="none">${ui('noJots')}</p>`}`;
   }
 
   function editJot(section) {

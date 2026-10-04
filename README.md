@@ -2,6 +2,14 @@
 
 关于大模型原理与部署的学习笔记，有中英两种语言。内容由三种文件组成：词条，一词一段解释；问题，以回答把若干词条串成一条路线；专题，写某个框架或模型的实现。
 
+网页：<https://lilin-1.github.io/learning-notes/>
+
+## 参与
+
+- 勘误：网页每页末尾的「勘误」链接到这一页的源文件，在 GitHub 上修改即可提交 PR。在本地修改时，先运行 `node build.js`，确认没有拒收与提示。
+- 提问：在网页上选中一段文字，点「记下疑问」；再在「疑问」中点「提交」，它就作为 issue 发到这里。也可以直接新建 issue。
+- 新增词条、问题或专题：按下文的语法与准入规则写，并同时写英文稿。
+
 ## 用法
 
 ```
@@ -133,7 +141,7 @@ index.html               网页；界面文字在脚本开头的 UI 对象中，
 
 ## 部署
 
-推送到 GitHub 的 `main` 分支后，`.github/workflows/pages.yml` 会运行 `node build.js`，再把 `index.html`、`data.js` 与 `vendor/` 发布到 GitHub Pages。有词条被拒收时构建失败，网站不会更新。`data.js` 不进仓库，永远由源文件生成。
+推送到 GitHub 的 `main` 分支后，`.github/workflows/pages.yml` 会运行 `node build.js`，再把 `index.html`、`data.js` 与 `vendor/` 发布到 GitHub Pages。有词条被拒收时构建失败，网站不会更新。拉取请求由 `.github/workflows/check.yml` 运行同样的审核。`data.js` 不进仓库，永远由源文件生成。
 
 首次部署前，须在仓库的 Settings → Pages 中把 Source 设为 GitHub Actions。
 

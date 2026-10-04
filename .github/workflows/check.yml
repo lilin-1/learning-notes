@@ -1,0 +1,19 @@
+# 拉取请求经同一套审核：有词条被拒收时 build.js 以非零状态退出，检查不通过。
+name: 审核
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: 审核
+        run: node build.js
