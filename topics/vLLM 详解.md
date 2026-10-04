@@ -53,6 +53,54 @@ vLLM 把一次服务拆成两个进程。API 进程负责网络与文本：接�
 
 工作者 `vllm/v1/worker/gpu_worker.py:Worker` 负责初始化设备、测算显存、加载模型与预热，再把每一步交给模型运行器。模型运行器有新旧两版：默认的新版 `vllm/v1/worker/gpu/model_runner.py:GPUModelRunner`，与旧版 `vllm/v1/worker/gpu_model_runner.py:GPUModelRunner`。新版遇到尚不支持的功能，如部分投机解码方法或自定义的得分处理器，会自动退回旧版。
 
+## 并行策略
+
+一张卡放不下模型或撑不住负载时，vLLM 把计算分到多张卡上。方式共有五种，可以组合使用：
+
+| 方式 | 参数 | 切分的对象 | 通信 |
+|---|---|---|---|
+| [[张量并行]] | `-tp` | 每层的权重与注意力头 | 每层两次全归约 |
+| [[流水线并行]] | `-pp` | 层 | 相邻阶段之间传隐状态 |
+| [[数据并行]] | `-dp` | 请求 | 稠密模型无需通信 |
+| [[专家并行]] | `-ep` | MoE 层的专家 | 每个 MoE 层两次全对全 |
+| 解码上下文并行 | `-dcp` | KV 缓存中的词元 | 注意力中的收集与合并 |
+
+一个数据并行副本占 TP × PP 张卡，总卡数再乘以 DP（`vllm/config/parallel.py:ParallelConfig`）。各卡的进程组按 DP、PP、TP 的次序编号（`vllm/distributed/parallel_state.py:initialize_model_parallel`）。张量并行在最内层，编号相邻的卡组成一个张量并行组，通常在同一台机器内，可以走 NVLink。
+
+张量并行按 Megatron-LM 的切法实现。`vllm/model_executor/layers/linear.py:ColumnParallelLinear` 按列切分权重，各卡得到输出的一段；`RowParallelLinear` 按行切分，各卡的部分和经全归约相加。注意力按头切分：`vllm/model_executor/layers/linear.py:QKVParallelLinear` 把查询头平分给各卡；键值头少于卡数时，每个键值头复制到几张卡上。各卡只缓存自己那几个头的键和值。全归约由 `vllm/distributed/device_communicators/cuda_communicator.py:all_reduce` 完成：它先尝试几种为小张量与 NVLink 写的实现，都不适用时才用 NCCL。
+
+例：Llama 3 70B 有 64 个查询头、8 个键值头。TP = 8 时，每张卡算 8 个查询头、1 个键值头；TP = 16 时，每个键值头存在 2 张卡上，KV 缓存因此多存一份。
+
+流水线并行由 `vllm/distributed/utils.py:get_pp_indices` 把层平分给各阶段。除不尽时，多出的层从倒数第二个阶段起往前各分一层，因为最后一个阶段还有末尾的归一化与输出层。不属于本阶段的层换成占位的 `PPMissingLayer`，阶段之间以 `vllm/sequence.py:IntermediateTensors` 传递隐状态与残差；模型须实现 `SupportsPP` 接口。一批请求要依次流过各阶段，为了不让前面的阶段空等，引擎同时保持 PP 个批在途，异步调度时再多一个（`vllm/config/vllm.py:max_concurrent_batches`）；由 `vllm/v1/engine/core.py:step_with_batch_queue` 轮流调度与取回。例：80 层分成 3 个阶段时，各阶段依次为 27、27、26 层。
+
+## 数据并行、专家并行与上下文并行
+
+数据并行的每个副本是一个独立的引擎进程，有自己的调度器与 KV 缓存。API 进程把新请求交给负载最轻的副本：`vllm/v1/engine/core_client.py:DPLBAsyncMPClient` 按等待与运行中的请求数打分，KV 缓存占用过半时，再加重等待中请求的分量。各副本的负载由 `vllm/v1/engine/coordinator.py:DPCoordinator` 收集并发布。
+
+稠密模型的各副本互不相干（`vllm/v1/engine/core.py:run_engine_core`）。[[混合专家]]模型则不同：MoE 层默认在全部 TP × DP 张卡上做张量并行，每次前向都要所有副本一起参加。所以各副本必须同步地前向，没有请求的副本也要跑一个空批（`vllm/v1/engine/core.py:DPEngineCoreProc`）。
+
+加上 `--enable-expert-parallel`，MoE 层改用专家并行：每张卡持有若干完整的专家，词元经全对全通信发往专家所在的卡，算完再发回（`vllm/model_executor/layers/fused_moe/config.py:FusedMoEParallelConfig`）。注意力层不受影响，仍按 TP 切分；TP = 1 时，每个副本各存一份完整的注意力权重。全对全的实现由 `--all2all-backend` 选择，默认由全收集与归约散射拼成，跨机器时可换用 DeepEP 等专用内核。例：8 张卡上以 TP = 1、DP = 8 部署 DeepSeek-V3，注意力权重每卡一份，256 个路由专家每卡 32 个。
+
+解码上下文并行解决 KV 缓存的重复。张量并行按键值头切分缓存，键值头数却由模型决定；TP 大于它时，同一份缓存会存在几张卡上。`-dcp` 让这几张卡再沿词元的方向分摊：默认第 $i$ 个词元存在组内第 $i \bmod \mathrm{DCP}$ 张卡上（`vllm/config/parallel.py:cp_kv_cache_interleave_size`）。它不增加卡数，上限为 TP 除以键值头数（`vllm/config/model.py:verify_with_parallel_config`）。计算注意力时，各卡只对自己存的词元算出部分结果，再像[[上下文并行]]那样合并（`vllm/v1/attention/ops/dcp.py:cp_lse_ag_out_rs`），代价是每层多几次组内通信。
+
+例：DeepSeek-R1 用[[多头潜在注意力]]，相当于只有 1 个键值头。TP = 8 时，8 张卡的 KV 缓存完全相同；加上 `-dcp 8`，每张卡只存八分之一，能容纳的词元数约增至 8 倍。
+
+另有预填充上下文并行 `-pcp`，把长提示切给多张卡分算，以缩短[[首词元延迟]]；`docs/serving/context_parallel_deployment.md` 称它仍在开发中。
+
+## 请求之间的并行
+
+上两节把一个模型分到多张卡上；同一份模型上，众多请求之间的并行靠合批。每一步，调度器选出的请求不论在预填充还是解码，都把本步要算的[[词元]]首尾相接，拼成一个 $N \times d$ 的输入，$N$ 是本步的词元总数。除了为 CUDA 图补齐的少数位置，其中没有补齐的空位。
+
+- 线性层与[[前馈网络]]对每个词元独立计算，整批只做一次矩阵乘法。解码时每个请求只有 1 个词元，合批之后权重读一次、供全部请求共用，[[算术强度]]随批的增大而提高。
+- 注意力要分开算，每个请求只能看到自己的前文。`vllm/v1/attention/backend.py:CommonAttentionMetadata` 记下各请求在这 $N$ 个词元中的起点 `query_start_loc`、各自的长度 `seq_lens` 与块表 `block_table_tensor`。注意力内核据此在一次启动中分别处理各个请求，按块表读取各自的 KV 缓存；`slot_mapping` 指明每个新词元的键和值写进缓存的哪个位置。
+- 输出层只在每个请求的最后一个位置计算[[得分]]，位置由 `vllm/v1/worker/gpu/input_batch.py:InputBatch` 的 `logits_indices` 给出；预填充中间的位置不必算，启用投机解码时另加草稿的位置。采样也对整批一起进行。
+
+例：一步中依次有 3 个解码请求与一段长 100 的预填充，$N = 103$，`query_start_loc` 为 $(0, 1, 2, 3, 103)$。输出层只算第 0、1、2、102 这 4 个位置。
+
+步与步之间还有两处重叠。一是异步调度，让处理器准备下一步与显卡执行这一步同时进行，见「调度器」一节。二是双批重叠，适用于数据并行加专家并行的 MoE 模型：`--enable-dbo` 把一批拆成两个微批（`vllm/v1/worker/ubatching.py:UBatchContext`）。一个微批做全对全通信时，另一个在计算，通信的时间因此被掩盖（`docs/design/dbo.md`）。
+
+网络一侧，切分词元与还原文本由 API 进程完成。数据并行时，API 进程默认与副本一样多（`vllm/entrypoints/cli/serve.py:cmd`），可用 `--api-server-count` 调整。
+
 ## 注意力后端
 
 注意力已没有专门的 PagedAttention 内核，旧的 CUDA 实现已从源码中删除。现在由若干后端计算：块表作为参数传进内核，由内核按块表读取分散存放的键和值。CUDA 显卡上的后端主要有四种：
@@ -98,6 +146,8 @@ vLLM 把显存中权重与激活用剩的部分全部分给 KV 缓存，分三�
 | `--max-num-batched-tokens` | 随硬件 | 每步的词元预算 |
 | `--enable-prefix-caching` | 开 | 前缀缓存；`--no-enable-prefix-caching` 关闭 |
 | `-tp`、`-pp`、`-dp` | 1 | 张量并行、流水线并行、数据并行的规模 |
+| `-ep` | 关 | MoE 层改用专家并行 |
+| `-dcp` | 1 | 解码上下文并行的规模 |
 | `--kv-cache-dtype` | auto | KV 缓存的数据类型；取 fp8 可减半 |
 | `-q`、`--quantization` | 随模型 | 量化方法 |
 | `--enforce-eager` | 关 | 不用 CUDA 图：启动快、省显存，解码变慢 |

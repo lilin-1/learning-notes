@@ -52,6 +52,54 @@ The executor is chosen by `vllm/v1/executor/abstract.py:get_class` according to 
 
 The worker `vllm/v1/worker/gpu_worker.py:Worker` initializes the device, measures memory, loads the model and warms it up, then hands each step to the model runner. There are two model runners: the new default `vllm/v1/worker/gpu/model_runner.py:GPUModelRunner` and the old `vllm/v1/worker/gpu_model_runner.py:GPUModelRunner`. When the new one meets a feature it does not yet support, such as some speculative decoding methods or custom logits processors, it falls back to the old one automatically.
 
+## Parallelism
+
+When a model does not fit on one GPU, or one GPU cannot carry the load, vLLM spreads the computation over several GPUs. There are five ways to do so, and they can be combined:
+
+| Kind | Flag | What is split | Communication |
+|---|---|---|---|
+| [[tensor parallelism]] | `-tp` | The weights and attention heads of every layer | Two all-reduces per layer |
+| [[pipeline parallelism]] | `-pp` | Layers | Hidden states passed between adjacent stages |
+| [[data parallelism]] | `-dp` | Requests | None for dense models |
+| [[expert parallelism]] | `-ep` | The experts of MoE layers | Two all-to-alls per MoE layer |
+| decode context parallelism | `-dcp` | The tokens in the KV cache | Gathering and merging inside attention |
+
+One data-parallel replica occupies TP × PP GPUs, and the total is that times DP (`vllm/config/parallel.py:ParallelConfig`). The process groups number the GPUs in the order DP, PP, TP (`vllm/distributed/parallel_state.py:initialize_model_parallel`). Tensor parallelism is innermost, so consecutively numbered GPUs form a tensor-parallel group, usually within one machine where NVLink is available.
+
+Tensor parallelism follows the Megatron-LM split. `vllm/model_executor/layers/linear.py:ColumnParallelLinear` splits a weight by columns, giving each GPU a slice of the output; `RowParallelLinear` splits by rows, and the partial sums on the GPUs are added by an all-reduce. Attention is split by heads: `vllm/model_executor/layers/linear.py:QKVParallelLinear` divides the query heads evenly among the GPUs, and when there are fewer key-value heads than GPUs, each key-value head is replicated on several GPUs. Each GPU caches keys and values only for its own heads. The all-reduce is done by `vllm/distributed/device_communicators/cuda_communicator.py:all_reduce`, which first tries several implementations written for small tensors and NVLink and falls back to NCCL only when none applies.
+
+Example: Llama 3 70B has 64 query heads and 8 key-value heads. With TP = 8, each GPU computes 8 query heads and 1 key-value head; with TP = 16, each key-value head lives on 2 GPUs, so the KV cache is stored twice.
+
+For pipeline parallelism, `vllm/distributed/utils.py:get_pp_indices` divides the layers evenly among the stages. When they do not divide evenly, the leftover layers go one each to the stages starting from the second-to-last and moving forward, because the last stage also holds the final normalization and the output layer. Layers outside a stage are replaced by the placeholder `PPMissingLayer`, and stages pass hidden states and residuals as `vllm/sequence.py:IntermediateTensors`; the model must implement the `SupportsPP` interface. A batch flows through the stages in turn, so to keep the earlier stages from idling, the engine keeps PP batches in flight at once, one more under asynchronous scheduling (`vllm/config/vllm.py:max_concurrent_batches`). `vllm/v1/engine/core.py:step_with_batch_queue` schedules and collects them in rotation. Example: 80 layers split into 3 stages give 27, 27 and 26 layers.
+
+## Data, expert and context parallelism
+
+Each data-parallel replica is a separate engine process with its own scheduler and KV cache. The API process sends each new request to the least loaded replica: `vllm/v1/engine/core_client.py:DPLBAsyncMPClient` scores replicas by their waiting and running requests, and once KV cache usage passes one half, it weighs waiting requests more heavily. The load of each replica is collected and published by `vllm/v1/engine/coordinator.py:DPCoordinator`.
+
+For dense models the replicas are fully independent (`vllm/v1/engine/core.py:run_engine_core`). [[mixture of experts|Mixture-of-experts]] models differ: by default their MoE layers use tensor parallelism across all TP × DP GPUs, so every forward pass needs every replica. The replicas must therefore run their forward passes in lockstep, and a replica with no requests still runs an empty batch (`vllm/v1/engine/core.py:DPEngineCoreProc`).
+
+With `--enable-expert-parallel`, MoE layers switch to expert parallelism: each GPU holds a number of whole experts, and tokens are sent by an all-to-all to the GPUs holding their experts and sent back afterwards (`vllm/model_executor/layers/fused_moe/config.py:FusedMoEParallelConfig`). Attention layers are unaffected and are still split by TP; with TP = 1, every replica keeps a full copy of the attention weights. The all-to-all implementation is chosen by `--all2all-backend`; the default is built from an all-gather and a reduce-scatter, and across machines dedicated kernels such as DeepEP can be used instead. Example: serving DeepSeek-V3 on 8 GPUs with TP = 1 and DP = 8 puts one copy of the attention weights on every GPU and 32 of the 256 routed experts on each.
+
+Decode context parallelism removes duplicated KV cache. Tensor parallelism splits the cache by key-value heads, but their number is fixed by the model; when TP exceeds it, the same cache is stored on several GPUs. The `-dcp` option lets those GPUs share it along the token dimension instead. By default, token $i$ is stored on GPU $i \bmod \mathrm{DCP}$ of the group (`vllm/config/parallel.py:cp_kv_cache_interleave_size`). It adds no GPUs, and its upper limit is TP divided by the number of key-value heads (`vllm/config/model.py:verify_with_parallel_config`). In attention, each GPU computes a partial result over the tokens it stores, and the partial results are merged as in [[context parallelism]] (`vllm/v1/attention/ops/dcp.py:cp_lse_ag_out_rs`), at the cost of a few more collective operations within the group per layer.
+
+Example: DeepSeek-R1 uses [[multi-head latent attention]], which amounts to a single key-value head. With TP = 8, all 8 GPUs hold identical KV caches; adding `-dcp 8` leaves each GPU an eighth, so about 8 times as many tokens fit.
+
+There is also prefill context parallelism, `-pcp`, which splits a long prompt across GPUs to shorten the [[time to first token]]; `docs/serving/context_parallel_deployment.md` describes it as under active development.
+
+## Parallelism across requests
+
+The previous two sections spread one model over several GPUs; on one copy of the model, the many requests run in parallel by being batched together. At each step, every request the scheduler selects, whether in prefill or decode, has the [[token|tokens]] it needs this step laid end to end into one $N \times d$ input, where $N$ is the total number of tokens in the step. Apart from a few positions padded for CUDA graphs, there is no padding.
+
+- Linear layers and the [[feedforward network]] treat every token independently, so the whole batch takes one matrix multiplication. In decoding each request contributes 1 token, so batching lets one read of the weights serve every request, and the [[arithmetic intensity]] rises with the batch size.
+- Attention must be computed separately, since each request may see only its own preceding text. `vllm/v1/attention/backend.py:CommonAttentionMetadata` records where each request starts among the $N$ tokens, `query_start_loc`, its length, `seq_lens`, and the block table, `block_table_tensor`. From these the attention kernel handles each request separately within one launch, reading each request's KV cache through its block table; `slot_mapping` says where in the cache the keys and values of each new token are written.
+- The output layer computes [[logits]] only at the last position of each request, given by `logits_indices` of `vllm/v1/worker/gpu/input_batch.py:InputBatch`. The positions inside a prefill need none; with speculative decoding the draft positions are added. Sampling, too, runs over the whole batch at once.
+
+Example: a step holding, in order, 3 decode requests and a 100-token stretch of prefill has $N = 103$ and `query_start_loc` equal to $(0, 1, 2, 3, 103)$. The output layer computes only positions 0, 1, 2 and 102.
+
+Between steps there are two further overlaps. The first is asynchronous scheduling, which lets the CPU prepare the next step while the GPU runs this one; see the section on the scheduler. The second is dual batch overlap: an MoE model served with data and expert parallelism can split a batch into two microbatches with `--enable-dbo` (`vllm/v1/worker/ubatching.py:UBatchContext`). While one microbatch is in its all-to-all communication, the other computes, so the communication time is hidden (`docs/design/dbo.md`).
+
+On the network side, the API processes split text into tokens and turn tokens back into text. With data parallelism there are by default as many API processes as replicas (`vllm/entrypoints/cli/serve.py:cmd`), adjustable with `--api-server-count`.
+
 ## Attention backends
 
 There is no longer a dedicated PagedAttention kernel; the old CUDA implementation has been removed from the source. Attention is now computed by one of several backends: the block table is passed into the kernel as an argument, and the kernel reads the scattered keys and values through it. On CUDA GPUs there are four main backends:
@@ -97,6 +145,8 @@ The most frequently adjusted startup parameters are listed below, with defaults 
 | `--max-num-batched-tokens` | Hardware-dependent | Token budget per step |
 | `--enable-prefix-caching` | On | Prefix caching; `--no-enable-prefix-caching` turns it off |
 | `-tp`, `-pp`, `-dp` | 1 | Degree of tensor, pipeline and data parallelism |
+| `-ep` | Off | Expert parallelism for MoE layers |
+| `-dcp` | 1 | Degree of decode context parallelism |
 | `--kv-cache-dtype` | auto | Data type of the KV cache; fp8 halves it |
 | `-q`, `--quantization` | Model-dependent | Quantization method |
 | `--enforce-eager` | Off | No CUDA graphs: faster startup and less memory, slower decoding |
